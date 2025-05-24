@@ -33,6 +33,13 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=pr-{{number}},enable=${{ github.event_name == 'pull_request' }}
+            type=raw,value=renovate-{{number}},enable=${{ github.event_name == 'pull_request' && contains(github.event.pull_request.title, 'renovate') }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -40,4 +47,5 @@ jobs:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }} 
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=registry,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push=true,visibility=public
