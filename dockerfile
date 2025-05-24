@@ -2,18 +2,44 @@ FROM lizardbyte/sunshine:v2025.524.144138-debian-bookworm@sha256:b95de5d12a7cda3
 
 # Build stage
 FROM base AS builder
+USER root
+
+# Install dependencies and enable 32-bit support
+RUN dpkg --add-architecture i386 && \
+    apt-get update && apt-get install -y \
+    curl \
+    gnupg2 \
+    ca-certificates \
+    xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add non-free and contrib repositories for Steam
+RUN echo "deb http://deb.debian.org/debian bookworm non-free contrib" >> /etc/apt/sources.list
+
+# Install required packages
 RUN apt-get update && apt-get install -y \
-    steam-launcher \
-    nvidia-driver \
-    nvidia-container-toolkit \
+    mesa-vulkan-drivers \
+    libglx-mesa0:i386 \
+    mesa-vulkan-drivers:i386 \
+    libgl1-mesa-dri:i386 \
+    libgbm1 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
+# Install Steam
+RUN curl -fsSL https://repo.steampowered.com/steam/archive/precise/steam_latest.deb -o steam.deb && \
+    dpkg -i steam.deb || true && \
+    apt-get update && \
+    apt-get install -f -y && \
+    rm steam.deb
+
 # Final stage
 FROM base
+USER root
 COPY --from=builder /usr/bin/steam /usr/bin/steam
-COPY --from=builder /usr/lib/nvidia* /usr/lib/
-COPY --from=builder /usr/lib32/nvidia* /usr/lib32/
+COPY --from=builder /usr/lib/steam /usr/lib/steam
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libgbm.so.1 /usr/lib/x86_64-linux-gnu/
+COPY --from=builder /usr/bin/xz /usr/bin/xz
 
 # Create non-root user
 RUN useradd -m -s /bin/bash steamshine
@@ -21,12 +47,7 @@ RUN useradd -m -s /bin/bash steamshine
 # NVIDIA runtime configuration
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=all
-
-# Verify NVIDIA Container Toolkit
-RUN if [ ! -f /usr/bin/nvidia-container-cli ]; then \
-        echo "NVIDIA Container Toolkit not found. Please ensure it is installed on the host system."; \
-        exit 1; \
-    fi
+ENV STEAM_RUNTIME=0
 
 # Security configurations
 ENV HOME=/home/steamshine
@@ -40,8 +61,8 @@ RUN chmod 755 /start.sh && \
 # Switch to non-root user
 USER steamshine
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+# Health check with longer initial delay for first-time setup
+HEALTHCHECK --interval=30s --timeout=10s --start-period=300s --retries=3 \
     CMD pgrep -f "steam|sunshine" || exit 1
 
 ENTRYPOINT ["/start.sh"]

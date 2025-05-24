@@ -52,14 +52,9 @@ docker-compose down
 
 ## Troubleshooting
 
-### NVIDIA Container Toolkit Issues
-If you see the error "NVIDIA Container Toolkit not found", ensure:
-1. NVIDIA Container Toolkit is installed on the host
-2. Docker is configured to use the NVIDIA runtime
-3. Host system has compatible NVIDIA drivers
-
 ### GPU Access Issues
 If the container cannot access the GPU:
 1. Verify `nvidia-smi` works on the host
 2. Check if the container is running with `--gpus all`
 3. Ensure the host's NVIDIA drivers are compatible with the container's requirements
+4. Verify NVIDIA Container Toolkit is installed and configured on the host
