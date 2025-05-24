@@ -1,6 +1,21 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
-  ]
+    "config:base"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["dockerfile"],
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "groupName": "docker base images",
+      "groupSlug": "docker-base",
+      "commitMessageTopic": "{{depName}}",
+      "commitMessageAction": "update to",
+      "commitMessagePrefix": "chore(deps):"
+    }
+  ],
+  "docker": {
+    "enabled": true,
+    "pinDigests": true
+  }
 }
