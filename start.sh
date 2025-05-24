@@ -9,5 +9,5 @@ STEAM_PID=$!
 sunshine &
 SUNSHINE_PID=$!
 
-# Wait for either process to exit
-wait $STEAM_PID $SUNSHINE_PID 
+# Only wait for Sunshine to exit, as Steam may restart during updates
+wait $SUNSHINE_PID 
