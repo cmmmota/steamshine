@@ -1,4 +1,4 @@
-FROM lizardbyte/sunshine:v2025.524.144138-debian-bookworm@sha256:b95de5d12a7cda3d38117562294d9700c5025fb5eda42b63eea1b6ed65187a77
+FROM lizardbyte/sunshine:v2025.525.33445-debian-bookworm@sha256:f3dee81cb24b69059aa01359f337728dd378530e6388158b53270fd0953be92c
 
 USER root
 
