@@ -50,6 +50,7 @@ RUN apt-get update && apt-get install -y \
     libxcb-xinerama0:i386 \
     weston \
     xwayland \
+    xwayland \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -58,7 +59,12 @@ RUN mkdir -p /tmp/.X11-unix && \
     chmod 1777 /tmp/.X11-unix && \
     mkdir -p /tmp/xdg-runtime && \
     chmod 700 /tmp/xdg-runtime && \
-    mkdir -p /home/lizard/.config
+    chown lizard:lizard /tmp/xdg-runtime && \
+    mkdir -p /home/lizard/.config && \
+    chown lizard:lizard /home/lizard/.config
+
+# Add lizard user to necessary groups
+RUN usermod -aG video lizard
 
 # Display configuration
 ENV DISPLAY_WIDTH=1920
