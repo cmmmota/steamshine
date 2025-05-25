@@ -2,16 +2,21 @@ FROM lizardbyte/sunshine:v2025.524.144138-debian-bookworm@sha256:b95de5d12a7cda3
 
 USER root
 
-# Install dependencies and enable 32-bit support
-RUN dpkg --add-architecture i386 && \
-    apt-get update && apt-get install -y \
+# Add i386 architecture & update
+RUN dpkg --add-architecture i386
+
+# Install required dependencies incl. Xorg dummy driver
+RUN apt-get update && apt-get install -y \
     curl \
     gnupg2 \
     ca-certificates \
     xz-utils \
+    xorg \
+    xserver-xorg-video-dummy \
+    x11-xserver-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Install NVIDIA Container Toolkit
+# NVIDIA Container Toolkit installation
 RUN curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
   && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
   sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
@@ -19,10 +24,9 @@ RUN curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearm
   apt-get update && \
   apt-get install -y nvidia-container-toolkit
 
-# Add non-free and contrib repositories for Steam
+# Add non-free and contrib for Steam + required libs
 RUN echo "deb http://deb.debian.org/debian bookworm non-free contrib" >> /etc/apt/sources.list
 
-# Install required packages
 RUN apt-get update && apt-get install -y \
     mesa-vulkan-drivers \
     libglx-mesa0:i386 \
@@ -50,23 +54,35 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Install Steam
+# Steam install
 RUN curl -fsSL https://repo.steampowered.com/steam/archive/precise/steam_latest.deb -o steam.deb && \
     dpkg -i steam.deb || true && \
     apt-get update && \
     apt-get install -f -y && \
     rm steam.deb
 
-# NVIDIA runtime configuration
+# Create a non-root user
+RUN useradd -m -s /bin/bash steamshine && \
+    mkdir -p /home/steamshine/.config && \
+    chown -R steamshine:steamshine /home/steamshine
+
+# NVIDIA runtime config
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=all
 ENV STEAM_RUNTIME=0
 
-# Copy and set up startup script
+# Copy the updated xorg.conf with multi-resolutions
+COPY xorg.conf /etc/X11/xorg.conf
+RUN chown steamshine:steamshine /etc/X11/xorg.conf
+
+# Copy the updated start.sh which launches Xorg + Sunshine
 COPY start.sh /start.sh
 RUN chmod 755 /start.sh
 
-# Health check with longer initial delay for first-time setup
+# Switch to non-root user
+USER steamshine
+
+# Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=300s --retries=3 \
     CMD pgrep -f "sunshine" || exit 1
 
