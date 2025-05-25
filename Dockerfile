@@ -59,11 +59,6 @@ RUN curl -fsSL https://repo.steampowered.com/steam/archive/precise/steam_latest.
     apt-get install -f -y && \
     rm steam.deb
 
-# Create a non-root user
-RUN useradd -m -s /bin/bash steamshine && \
-    mkdir -p /home/steamshine/.config && \
-    chown -R steamshine:steamshine /home/steamshine
-
 # NVIDIA runtime config
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=all
@@ -79,7 +74,7 @@ COPY start.sh /start.sh
 RUN chmod 755 /start.sh
 
 # Switch to non-root user
-USER steamshine
+USER lizard
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=300s --retries=3 \
