@@ -7,13 +7,14 @@ on:
       - 'Dockerfile'
       - 'docker-compose.yml'
       - '.github/workflows/docker-build.yml'
+      - 'start.sh'
   pull_request:
     branches: [ main ]
     paths:
       - 'Dockerfile'
       - 'docker-compose.yml'
       - '.github/workflows/docker-build.yml'
-
+      - 'start.sh'
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}

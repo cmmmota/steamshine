@@ -49,8 +49,35 @@ RUN apt-get update && apt-get install -y \
     libxcb-xinerama0 \
     libxcb-xinerama0:i386 \
     weston \
+    xwayland \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /tmp/.X11-unix && \
+    chmod 1777 /tmp/.X11-unix && \
+    mkdir -p /tmp/xdg-runtime && \
+    chmod 700 /tmp/xdg-runtime && \
+    mkdir -p /home/lizard/.config
+
+# Display configuration
+ENV DISPLAY_WIDTH=1920
+ENV DISPLAY_HEIGHT=1080
+ENV DISPLAY_REFRESH_RATE=60
+    
+# Create Weston configuration
+RUN cat > /home/lizard/.config/weston.ini <<EOF
+[core]
+backend=headless-backend.so
+xwayland=true
+
+[output]
+name=headless
+mode=${DISPLAY_WIDTH}x${DISPLAY_HEIGHT}@${DISPLAY_REFRESH_RATE}
+
+[xwayland]
+command=/usr/bin/Xwayland
+EOF
 
 # Steam install
 RUN curl -fsSL https://repo.steampowered.com/steam/archive/precise/steam_latest.deb -o steam.deb && \
@@ -64,10 +91,11 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=all
 ENV STEAM_RUNTIME=0
 
-# Display configuration
-ENV DISPLAY_WIDTH=1920
-ENV DISPLAY_HEIGHT=1080
-ENV DISPLAY_REFRESH_RATE=60
+# Wayland and X11 environment
+ENV XDG_RUNTIME_DIR=/tmp/xdg-runtime
+ENV XAUTHORITY=/tmp/.Xauthority
+ENV WAYLAND_DISPLAY=wayland-0
+ENV DISPLAY=:0
 
 # Copy the updated start.sh which launches Xorg + Sunshine
 COPY start.sh /start.sh
