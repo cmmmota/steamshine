@@ -11,9 +11,6 @@ RUN apt-get update && apt-get install -y \
     gnupg2 \
     ca-certificates \
     xz-utils \
-    xorg \
-    xserver-xorg-video-dummy \
-    x11-xserver-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # NVIDIA Container Toolkit installation
@@ -51,6 +48,7 @@ RUN apt-get update && apt-get install -y \
     libxcb-render0:i386 \
     libxcb-xinerama0 \
     libxcb-xinerama0:i386 \
+    weston \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -71,9 +69,10 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=all
 ENV STEAM_RUNTIME=0
 
-# Copy the updated xorg.conf with multi-resolutions
-COPY xorg.conf /etc/X11/xorg.conf
-RUN chown steamshine:steamshine /etc/X11/xorg.conf
+# Display configuration
+ENV DISPLAY_WIDTH=1920
+ENV DISPLAY_HEIGHT=1080
+ENV DISPLAY_REFRESH_RATE=60
 
 # Copy the updated start.sh which launches Xorg + Sunshine
 COPY start.sh /start.sh
