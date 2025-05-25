@@ -24,7 +24,12 @@
       "groupSlug": "docker-base",
       "commitMessageTopic": "{{depName}}",
       "commitMessageAction": "update to",
-      "commitMessagePrefix": "chore(deps):"
+      "commitMessagePrefix": "chore(deps):",
+      "matchDatasources": ["github-releases"],
+      "matchPackageNames": ["LizardByte/Sunshine"]
     }
-  ]
+  ],
+  "dockerfile": {
+    "enabled": true
+  }
 }

@@ -6,16 +6,16 @@ services:
       - steam-data:/home/steamshine/.steam
       - sunshine-config:/home/steamshine/.config/sunshine
     environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=all
       - STEAM_RUNTIME=0
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    devices:
+      - /dev/dri:/dev/dri
+    privileged: true
+    cap_add:
+      - SYS_NICE
+    security_opt:
+      - seccomp:unconfined
+    group_add:
+      - video
 
 volumes:
   steam-data:
