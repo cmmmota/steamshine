@@ -1,33 +1,46 @@
 #!/bin/bash
-set -e
 
-HOME_DIR="/home/steamshine"
-XDG_RUNTIME_DIR="$HOME_DIR/.run"
-PULSE_RUNTIME_DIR="$XDG_RUNTIME_DIR/pulse"
+# Function to start Sunshine with appropriate GPU settings
+start_sunshine() {
+    # Start Sunshine in the background
+    sunshine &
+    SUNSHINE_PID=$!
+    #echo "Sunshine is disabled"
+}
 
-# Prepare runtime dirs
-mkdir -p "$XDG_RUNTIME_DIR"
-mkdir -p "$PULSE_RUNTIME_DIR"
-chmod 700 "$XDG_RUNTIME_DIR"
+# Function to start Steam with Gamescope
+start_steam() {
+    export XDG_RUNTIME_DIR=/tmp/xdg-runtime
+    mkdir -p $XDG_RUNTIME_DIR
+    chmod 700 $XDG_RUNTIME_DIR
+    export WAYLAND_DISPLAY=wayland-0
+    
+    # Start Steam with Gamescope
+    # -f: Fullscreen
+    # -W/-H: Resolution
+    # -r: Refresh rate
+    # -e: Enable Steam integration
+    # -o: Enable HDR if available
+    # --force-windows-fullscreen: Ensure proper fullscreen
+    # --adaptive-sync: Enable VRR if available
+    # --steam-bigpicture: Enable Steam Big Picture mode
+    gamescope -f \
+        -W $DISPLAY_WIDTH \
+        -H $DISPLAY_HEIGHT \
+        -r $DISPLAY_REFRESH \
+        --rt \
+        -f \
+        --steam \
+        --adaptive-sync \
+        --expose-wayland \
+        --backend $GAMESCOPE_BACKEND \
+        -- steam -bigpicture &
+    STEAM_PID=$!
+}
 
-export XDG_RUNTIME_DIR="$HOME_DIR/.run"
-export PULSE_RUNTIME_PATH="$PULSE_RUNTIME_DIR"
-export PULSE_SERVER="unix:$PULSE_RUNTIME_DIR/native"
-export WAYLAND_DISPLAY=wayland-0
+# Start services
+start_sunshine
+start_steam
 
-# Set DISPLAY and gamescope params with defaults
-export DISPLAY=":1"
-DISPLAY_WIDTH="${DISPLAY_WIDTH:-1920}"
-DISPLAY_HEIGHT="${DISPLAY_HEIGHT:-1080}"
-DISPLAY_REFRESH_RATE="${DISPLAY_REFRESH_RATE:-60}"
-
-# Start pulseaudio if not running
-if ! pgrep pulseaudio > /dev/null 2>&1; then
-  pulseaudio --start --exit-idle-time=-1
-fi
-
-# Start sunshine in background
-#sunshine &
-
-# Launch gamescope + steam in foreground
-exec /usr/games/gamescope --rt -w $DISPLAY_WIDTH -h $DISPLAY_HEIGHT -r $DISPLAY_REFRESH_RATE -- steam -silent
+# Wait for either process to exit
+wait $STEAM_PID 

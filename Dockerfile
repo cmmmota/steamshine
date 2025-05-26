@@ -1,55 +1,183 @@
-FROM debian:bookworm-slim@sha256:90522eeb7e5923ee2b871c639059537b30521272f10ca86fdbbbb2b75a8c40cd
+# Use Arch Linux as base
+FROM archlinux/archlinux:base@sha256:0a0e9d52dd484e641f5888fff45fbaff2e45f9b05ff2b7e99d7d32b08c2537e3
 
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Display configuration
+# Set environment variables
 ENV DISPLAY_WIDTH=1920
 ENV DISPLAY_HEIGHT=1080
-ENV DISPLAY_REFRESH_RATE=60
+ENV DISPLAY_REFRESH=60
+ENV GAMESCOPE_BACKEND=headless
 
-# Sunshine version
-ARG SUNSHINE_VERSION=v2025.122.141614
-LABEL org.opencontainers.image.version.sunshine=${SUNSHINE_VERSION}
+# Create non-root user
+RUN useradd -m -G video,audio,users steamshine && \
+    echo "steamshine ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-# Step 1: Enable i386 architecture and update
-RUN dpkg --add-architecture i386 && apt-get update
+# Update package repos
+RUN \
+    echo "**** Update package manager ****" \
+        && sed -i 's/^NoProgressBar/#NoProgressBar/g' /etc/pacman.conf \
+        && echo -e "[multilib]\nInclude = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf \
+        && echo -e "\n[lizardbyte]\nSigLevel = Optional\nServer = https://github.com/LizardByte/pacman-repo/releases/latest/download" >> /etc/pacman.conf \
+    && \
+    echo
 
-# Step 2: Install core system utilities and runtime dependencies
-RUN apt-get install -y --no-install-recommends \
-    curl wget unzip pulseaudio \
-    xz-utils zenity python3-apt libgtk2.0-0 libcurl4 \
-    libudev1 libjsoncpp25 libnm0 libnotify4 \
-    libgl1-mesa-dri:i386 libgl1-mesa-glx:i386 libsdl2-2.0-0:i386 \
-    mesa-vulkan-drivers vulkan-tools \
-    libnss3 libxss1 libgconf-2-4 libasound2 \
-    gdebi-core ca-certificates policykit-1 xterm \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+# Re-install certificates
+RUN \
+    echo "**** Install certificates ****" \
+	    && pacman -Syu --noconfirm --needed \
+            ca-certificates \
+    && \
+    echo "**** Section cleanup ****" \
+	    && pacman -Scc --noconfirm \
+        && rm -fr /var/lib/pacman/sync/* \
+        && rm -fr /var/cache/pacman/pkg/* \
+    && \
+    echo
 
-# Step 3: Install Steam from official .deb
-RUN wget https://steamcdn-a.akamaihd.net/client/installer/steam.deb && \
-    gdebi -n steam.deb && rm steam.deb
+# Install core packages
+RUN \
+    echo "**** Install tools ****" \
+	    && pacman -Syu --noconfirm --needed \
+            sudo \
+            bash \
+            bash-completion \
+            curl \
+            less \
+            nano \
+            procps \
+            sudo \
+            wget \
+            which \
+            vulkan-icd-loader \
+            vulkan-tools \
+    && \
+    echo "**** Section cleanup ****" \
+	    && pacman -Scc --noconfirm \
+        && rm -fr /var/lib/pacman/sync/* \
+        && rm -fr /var/cache/pacman/pkg/* \
+    && \
+    echo
 
-# Step 4: Install gamescope from Debian package
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gamescope \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* \
-    && setcap 'CAP_SYS_NICE=eip' /usr/games/gamescope
+# Install Wayland requirements
+ENV \
+    WAYLAND_DISPLAY="wayland-0"
+RUN \
+    echo "**** Install Wayland requirements ****" \
+        && pacman -Syu --noconfirm --needed \
+            wayland \
+            wayland-protocols \
+            wayvnc \
+            xorg-xwayland \
+            gamescope \
+            weston \
+        && setcap 'CAP_SYS_NICE=eip' $(which gamescope) \
+    && \
+    echo "**** Section cleanup ****" \
+        && pacman -Scc --noconfirm \
+        && rm -fr /var/lib/pacman/sync/* \
+        && rm -fr /var/cache/pacman/pkg/* \
+    && \
+    echo
 
-# Step 5: Create user and set permissions
-RUN useradd -m -s /bin/bash steamshine && \
-    usermod -aG video steamshine
+# Install Pipewire requirements
+ENV \
+    PIPEWIRE_SOCKET_DIR="/tmp/pipewire-0" \
+    PIPEWIRE_CONFIG_DIR="/etc/pipewire" \
+    PIPEWIRE_CONFIG_FILE="/etc/pipewire/pipewire.conf"
+RUN \
+    echo "**** Install Pipewire requirements ****" \
+        && pacman -Syu --noconfirm --needed \
+            pipewire \
+            pipewire-pulse \
+            pipewire-zeroconf \
+            pipewire-media-session \
+    && \
+    echo "**** Section cleanup ****" \
+        && pacman -Scc --noconfirm \
+        && rm -fr /var/lib/pacman/sync/* \
+        && rm -fr /var/cache/pacman/pkg/* \
+    && \
+    echo
 
-# Step 6: Install Sunshine (latest release from GitHub)
-RUN wget https://github.com/LizardByte/Sunshine/releases/download/${SUNSHINE_VERSION}/sunshine-debian-bookworm-amd64.deb && \
-    apt-get update && apt-get install -y ./sunshine-debian-bookworm-amd64.deb && \
-    rm sunshine-debian-bookworm-amd64.deb && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# Setup video streaming deps
+RUN \
+    echo "**** Install video streaming deps ****" \
+        && pacman -Syu --noconfirm --needed \
+            libva \
+            libva-mesa-driver \
+            libva-intel-driver \
+    && \
+    echo "**** Section cleanup ****" \
+	    && pacman -Scc --noconfirm \
+        && rm -fr /var/lib/pacman/sync/* \
+        && rm -fr /var/cache/pacman/pkg/* \
+    && \
+    echo
 
-# Step 7: Set working directory and entrypoint script
+# Install tools for monitoring hardware
+RUN \
+    echo "**** Install tools for monitoring hardware ****" \
+        && pacman -Syu --noconfirm --needed \
+            #cpu-x \
+            htop \
+            libva-utils \
+            vdpauinfo \
+    && \
+    echo "**** Section cleanup ****" \
+	    && pacman -Scc --noconfirm \
+        && rm -fr /var/lib/pacman/sync/* \
+        && rm -fr /var/cache/pacman/pkg/* \
+    && \
+    echo
+
+# Install Steam
+RUN \
+    echo "**** Install Steam ****" \
+	    && pacman -Syu --noconfirm --needed \
+            steam \
+    && \
+    echo "**** Section cleanup ****" \
+	    && pacman -Scc --noconfirm \
+        && rm -fr /var/lib/pacman/sync/* \
+        && rm -fr /var/cache/pacman/pkg/* \
+    && \
+    echo
+
+# Initialize Steam directories with correct permissions
+RUN mkdir -p /home/steamshine/.steam /home/steamshine/.local/share/Steam && \
+    chown -R steamshine:steamshine /home/steamshine && \
+    chmod -R 755 /home/steamshine/.steam /home/steamshine/.local/share/Steam
+
+# Install Sunshine from official repo
+RUN \
+    echo "**** Install Sunshine ****" \
+        && pacman -Syu --noconfirm --needed \
+            miniupnpc \
+            lizardbyte/sunshine \
+        && setcap cap_sys_admin+p $(readlink -f $(which sunshine)) \
+        && setcap cap_sys_nice+p $(readlink -f $(which sunshine)) \
+    && \
+    echo "**** Section cleanup ****" \
+	    && pacman -Scc --noconfirm \
+        && rm -fr /var/lib/pacman/sync/* \
+        && rm -fr /var/cache/pacman/pkg/* \
+    && \
+    echo
+
+# Initialize Sunshine directories with correct permissions
+RUN mkdir -p /home/steamshine/.config/sunshine && \
+    chown -R steamshine:steamshine /home/steamshine/.config/sunshine && \
+    chmod -R 755 /home/steamshine/.config/sunshine
+
+# Create startup script
 COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
+# Set up volumes
+VOLUME ["/home/steamshine/.steam", "/home/steamshine/.local/share/sunshine"]
+
+# Switch to non-root user
 USER steamshine
 WORKDIR /home/steamshine
 
-ENTRYPOINT ["/usr/local/bin/start.sh"]
+# Set entrypoint
+ENTRYPOINT ["/usr/local/bin/start.sh"] 
