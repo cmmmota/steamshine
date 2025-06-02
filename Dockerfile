@@ -5,7 +5,7 @@ FROM archlinux/archlinux:base@sha256:0a0e9d52dd484e641f5888fff45fbaff2e45f9b05ff
 ENV DISPLAY_WIDTH=1920
 ENV DISPLAY_HEIGHT=1080
 ENV DISPLAY_REFRESH=60
-ENV GAMESCOPE_BACKEND=headless
+
 
 # Create non-root user
 RUN useradd -m -G video,audio,users steamshine && \
@@ -65,11 +65,11 @@ RUN \
         && pacman -Syu --noconfirm --needed \
             wayland \
             wayland-protocols \
-            wayvnc \
             xorg-xwayland \
+            waypipe \
             gamescope \
             weston \
-        && setcap 'CAP_SYS_NICE=eip' $(which gamescope) \
+        && setcap cap_sys_nice+p $(readlink -f $(which gamescope)) \
     && \
     echo "**** Section cleanup ****" \
         && pacman -Scc --noconfirm \
@@ -171,6 +171,12 @@ RUN mkdir -p /home/steamshine/.config/sunshine && \
 # Create startup script
 COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
+
+# Copy Weston configuration
+COPY weston.ini /home/steamshine/.config/weston.ini
+RUN chown steamshine:steamshine /home/steamshine/.config/weston.ini && \
+    chmod 644 /home/steamshine/.config/weston.ini
+
 
 # Set up volumes
 VOLUME ["/home/steamshine/.steam", "/home/steamshine/.local/share/sunshine"]

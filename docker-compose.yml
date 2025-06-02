@@ -5,22 +5,13 @@ services:
     volumes:
       - steam-data:/home/steamshine/.steam
       - sunshine-config:/home/steamshine/.config/sunshine
-      - /run/user/1000:/run/user/1000
-    environment:
-      - STEAM_RUNTIME=0
-      - GAMESCOPE_BACKEND=drm
-      - XDG_RUNTIME_DIR=/run/user/1000
-      - WAYLAND_DISPLAY=wayland-0
     devices:
       - /dev/dri:/dev/dri
     privileged: true
     cap_add:
-      - SYS_NICE
       - SYS_ADMIN
     security_opt:
-      - seccomp:unconfined
-    group_add:
-      - video
+      - seccomp=unconfined
 
 volumes:
   steam-data:
