@@ -8,7 +8,7 @@ ENV DISPLAY_REFRESH=60
 
 
 # Create non-root user
-RUN useradd -m -G video,audio,users,input steamshine && \
+RUN useradd -m -G video,users,input steamshine && \
     echo "steamshine ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 # Update package repos
@@ -88,25 +88,6 @@ RUN \
             xorg-xwayland \
             gamescope \
         && setcap cap_sys_nice+p $(readlink -f $(which gamescope)) \
-    && \
-    echo "**** Section cleanup ****" \
-        && pacman -Scc --noconfirm \
-        && rm -fr /var/lib/pacman/sync/* \
-        && rm -fr /var/cache/pacman/pkg/* \
-    && \
-    echo
-
-# Install Pipewire requirements
-ENV \
-    PIPEWIRE_SOCKET_DIR="/tmp/pipewire-0" \
-    PIPEWIRE_CONFIG_DIR="/etc/pipewire" \
-    PIPEWIRE_CONFIG_FILE="/etc/pipewire/pipewire.conf"
-RUN \
-    echo "**** Install Pipewire requirements ****" \
-        && pacman -Syu --noconfirm --needed \
-            pipewire \
-            pipewire-pulse \
-            pipewire-zeroconf \
     && \
     echo "**** Section cleanup ****" \
         && pacman -Scc --noconfirm \
