@@ -49,6 +49,10 @@ RUN \
             which \
             vulkan-icd-loader \
             vulkan-tools \
+            git \
+            fakeroot \
+            base-devel \
+            debugedit \
     && \
     echo "**** Section cleanup ****" \
 	    && pacman -Scc --noconfirm \
@@ -57,18 +61,32 @@ RUN \
     && \
     echo
 
+# Install yay
+RUN \
+    echo "**** Install Yay ****" \
+	    && pacman -Sy \
+	    && su - steamshine -c 'git clone https://aur.archlinux.org/yay.git /tmp/yay && cd /tmp/yay && makepkg --noconfirm --syncdeps --install' \
+    && \
+    echo "**** Section cleanup ****" \
+	    && pacman -Scc --noconfirm \
+        && rm -fr /home/default/.cache/yay \
+        && rm -fr /var/lib/pacman/sync/* \
+        && rm -fr /var/cache/pacman/pkg/* \
+        && rm -rf /tmp/yay* \
+    && \
+    echo
+
 # Install Wayland requirements
 ENV \
     WAYLAND_DISPLAY="wayland-0"
 RUN \
     echo "**** Install Wayland requirements ****" \
+        && su - steamshine -c "yay -Syu --noconfirm --needed wayfire wf-config" \
         && pacman -Syu --noconfirm --needed \
             wayland \
             wayland-protocols \
             xorg-xwayland \
-            waypipe \
             gamescope \
-            weston \
         && setcap cap_sys_nice+p $(readlink -f $(which gamescope)) \
     && \
     echo "**** Section cleanup ****" \
@@ -89,20 +107,11 @@ RUN \
             pipewire \
             pipewire-pulse \
             pipewire-zeroconf \
-            pipewire-media-session \
     && \
     echo "**** Section cleanup ****" \
         && pacman -Scc --noconfirm \
         && rm -fr /var/lib/pacman/sync/* \
         && rm -fr /var/cache/pacman/pkg/* \
-    && \
-    echo
-
-# Set up audio permissions
-RUN \
-    echo "**** Set up audio permissions ****" \
-        && echo "SUBSYSTEM==\"sound\", MODE=\"rwm\"" > /etc/udev/rules.d/99-steamshine-audio.rules \
-        && udevadm trigger \
     && \
     echo
 
@@ -181,11 +190,10 @@ RUN mkdir -p /home/steamshine/.config/sunshine && \
 COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
-# Copy Weston configuration
-COPY weston.ini /home/steamshine/.config/weston.ini
-RUN chown steamshine:steamshine /home/steamshine/.config/weston.ini && \
-    chmod 644 /home/steamshine/.config/weston.ini
-
+# Copy Wayfire configuration
+COPY wayfire.ini /home/steamshine/.config/wayfire.ini
+RUN chown steamshine:steamshine /home/steamshine/.config/wayfire.ini && \
+    chmod 644 /home/steamshine/.config/wayfire.ini
 
 # Set up volumes
 VOLUME ["/home/steamshine/.steam", "/home/steamshine/.local/share/sunshine"]

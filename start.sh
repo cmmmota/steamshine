@@ -38,15 +38,15 @@ start_steam() {
     STEAM_PID=$!
 }
 
-start_weston() {
-    weston --backend=headless --shell=kiosk --socket=$WAYLAND_DISPLAY &
-    WESTON_PID=$!
+start_wayfire() {
+    wayfire &
+    WAYFIRE_PID=$!
 
     sleep 10
 }
 
 #Start compositor
-start_weston
+start_wayfire
 
 # Start services
 #start_sunshine
