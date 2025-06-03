@@ -34,12 +34,12 @@ start_steam() {
         --steam \
         --expose-wayland \
         --backend headless \
-        -- steam -bigpicture &
+        -- steam -tenfoot &
     STEAM_PID=$!
 }
 
 start_weston() {
-    weston --backend=headless --xwayland --shell=kiosk --socket=$WAYLAND_DISPLAY &
+    weston --backend=headless --shell=kiosk --socket=$WAYLAND_DISPLAY &
     WESTON_PID=$!
 
     sleep 10
@@ -49,7 +49,7 @@ start_weston() {
 start_weston
 
 # Start services
-start_sunshine
+#start_sunshine
 start_steam
 
 # Wait for either process to exit

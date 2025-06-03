@@ -8,7 +8,7 @@ ENV DISPLAY_REFRESH=60
 
 
 # Create non-root user
-RUN useradd -m -G video,audio,users steamshine && \
+RUN useradd -m -G video,audio,users,input steamshine && \
     echo "steamshine ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 # Update package repos
@@ -98,6 +98,14 @@ RUN \
     && \
     echo
 
+# Set up audio permissions
+RUN \
+    echo "**** Set up audio permissions ****" \
+        && echo "SUBSYSTEM==\"sound\", MODE=\"rwm\"" > /etc/udev/rules.d/99-steamshine-audio.rules \
+        && udevadm trigger \
+    && \
+    echo
+
 # Setup video streaming deps
 RUN \
     echo "**** Install video streaming deps ****" \
@@ -133,7 +141,8 @@ RUN \
 RUN \
     echo "**** Install Steam ****" \
 	    && pacman -Syu --noconfirm --needed \
-            steam \
+            steam-native-runtime \
+            
     && \
     echo "**** Section cleanup ****" \
 	    && pacman -Scc --noconfirm \
