@@ -47,6 +47,8 @@ RUN \
             sudo \
             wget \
             which \
+            lib32-nvidia-utils \
+            nvidia-utils \
             vulkan-icd-loader \
             vulkan-tools \
             git \
@@ -131,7 +133,7 @@ RUN \
 RUN \
     echo "**** Install Steam ****" \
 	    && pacman -Syu --noconfirm --needed \
-            steam-native-runtime \
+            steam \
             
     && \
     echo "**** Section cleanup ****" \
