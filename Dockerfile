@@ -50,6 +50,7 @@ RUN \
             which \
             vulkan-icd-loader \
             vulkan-tools \
+            mesa-utils \
             git \
             fakeroot \
             base-devel \
@@ -164,9 +165,9 @@ RUN \
     echo
 
 # Setup machine-id
-RUN systemd-machine-id-setup
-
-
+RUN systemd-machine-id-setup \
+    && mkdir -p /run/dbus/ \
+    && chown -R steamshine:steamshine /run/dbus/
 
 # Initialize Sunshine directories with correct permissions
 RUN mkdir -p /home/steamshine/.config/sunshine && \
