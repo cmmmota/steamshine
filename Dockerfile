@@ -47,14 +47,27 @@ RUN \
             sudo \
             wget \
             which \
-            lib32-nvidia-utils \
-            nvidia-utils \
             vulkan-icd-loader \
             vulkan-tools \
             git \
             fakeroot \
             base-devel \
             debugedit \
+    && \
+    echo "**** Section cleanup ****" \
+	    && pacman -Scc --noconfirm \
+        && rm -fr /var/lib/pacman/sync/* \
+        && rm -fr /var/cache/pacman/pkg/* \
+    && \
+    echo
+
+
+# Install driver dependencies
+RUN \
+    echo "**** Install NVidia driver dependencies ****" \
+        && pacman -Syu --noconfirm --needed \
+            lib32-nvidia-utils \
+            nvidia-utils \
     && \
     echo "**** Section cleanup ****" \
 	    && pacman -Scc --noconfirm \
