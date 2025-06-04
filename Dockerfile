@@ -38,6 +38,7 @@ RUN \
     echo "**** Install tools ****" \
 	    && pacman -Syu --noconfirm --needed \
             sudo \
+            dbus \
             bash \
             bash-completion \
             curl \
@@ -162,6 +163,11 @@ RUN \
     && \
     echo
 
+# Setup machine-id
+RUN systemd-machine-id-setup
+
+
+
 # Initialize Sunshine directories with correct permissions
 RUN mkdir -p /home/steamshine/.config/sunshine && \
     chown -R steamshine:steamshine /home/steamshine/.config/sunshine && \
@@ -170,11 +176,6 @@ RUN mkdir -p /home/steamshine/.config/sunshine && \
 # Create startup script
 COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
-
-# Copy Wayfire configuration
-COPY wayfire.ini /home/steamshine/.config/wayfire.ini
-RUN chown steamshine:steamshine /home/steamshine/.config/wayfire.ini && \
-    chmod 644 /home/steamshine/.config/wayfire.ini
 
 # Set up volumes
 VOLUME ["/home/steamshine/.steam", "/home/steamshine/.local/share/sunshine"]

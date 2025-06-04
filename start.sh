@@ -3,7 +3,11 @@
 export XDG_RUNTIME_DIR=/tmp/xdg-runtime
 mkdir -p $XDG_RUNTIME_DIR
 chmod 700 $XDG_RUNTIME_DIR
-export WAYLAND_DISPLAY=wayland-0
+export WAYLAND_DISPLAY=wayland-1
+
+export WLR_RENDER_DRM_DEVICE=/dev/dri/card0
+export WLR_BACKENDS=headless
+export WLR_HEADLESS_OUTPUTS=1
 
 # Function to start Sunshine with appropriate GPU settings
 start_sunshine() {
@@ -25,9 +29,6 @@ start_steam() {
     # --adaptive-sync: Enable VRR if available
     # --steam-bigpicture: Enable Steam Big Picture mode
     gamescope -f \
-        -W $DISPLAY_WIDTH \
-        -H $DISPLAY_HEIGHT \
-        -r $DISPLAY_REFRESH \
         --rt \
         -f \
         -v \
@@ -49,7 +50,7 @@ start_wayfire() {
 start_wayfire
 
 # Start services
-#start_sunshine
+start_sunshine
 start_steam
 
 # Wait for either process to exit
