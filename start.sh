@@ -5,16 +5,21 @@ mkdir -p $XDG_RUNTIME_DIR
 chmod 700 $XDG_RUNTIME_DIR
 export WAYLAND_DISPLAY=wayland-1
 
-export WLR_RENDER_DRM_DEVICE=/dev/dri/card0
-export WLR_BACKENDS=headless
-export WLR_HEADLESS_OUTPUTS=1
+export WLR_RENDERER=vulkan
+export WLR_BACKENDS=libinput,headless
+export WLR_LIBINPUT_NO_DEVICES=1
+export XDG_CURRENT_DESKTOP=sway
+export XDG_SESSION_DESKTOP=sway
+export XDG_SESSION_CLASS=user
+export XDG_SESSION_TYPE=wayland
+export XDG_RUNTIME_DIR=/run/user/1000
 
 sudo ldconfig
 
 # Function to start Sunshine with appropriate GPU settings
 start_sunshine() {
     # Start Sunshine in the background
-    LD_LIBRARY_PATH=/usr/lib/nvidia:$LD_LIBRARY_PATH sunshine &
+    sunshine &
     SUNSHINE_PID=$!
     #echo "Sunshine is disabled"
 }
@@ -42,21 +47,21 @@ start_steam() {
     STEAM_PID=$!
 }
 
-start_wayfire() {
-    wayfire &
+start_sway() {
+    dbus-run-session sway --unsupported-gpu &
     WAYFIRE_PID=$!
 
     sleep 3
 }
 
 #Start compositor
-start_wayfire
+start_sway
 
 # Start services
 start_sunshine
 
-#start_steam
+start_steam
 
 # Wait for either process to exit
-#wait $STEAM_PID 
-wait $SUNSHINE_PID
+wait $STEAM_PID 
+#wait $SUNSHINE_PID

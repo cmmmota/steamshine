@@ -8,7 +8,7 @@ ENV DISPLAY_REFRESH=60
 
 
 # Create non-root user
-RUN useradd -m -G video,users,input steamshine && \
+RUN useradd -m -G video,audio,input steamshine && \
     echo "steamshine ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 # Update package repos
@@ -26,11 +26,11 @@ RUN \
 	    && pacman -Syu --noconfirm --needed \
             ca-certificates \
     && \
-    echo "**** Section cleanup ****" \
-	    && pacman -Scc --noconfirm \
-        && rm -fr /var/lib/pacman/sync/* \
-        && rm -fr /var/cache/pacman/pkg/* \
-    && \
+    # echo "**** Section cleanup ****" \
+	#     && pacman -Scc --noconfirm \
+    #     && rm -fr /var/lib/pacman/sync/* \
+    #     && rm -fr /var/cache/pacman/pkg/* \
+    # && \
     echo
 
 # Install core packages
@@ -56,46 +56,41 @@ RUN \
             base-devel \
             debugedit \
     && \
-    echo "**** Section cleanup ****" \
-	    && pacman -Scc --noconfirm \
-        && rm -fr /var/lib/pacman/sync/* \
-        && rm -fr /var/cache/pacman/pkg/* \
-    && \
-    echo
-
-# Install yay
-RUN \
-    echo "**** Install Yay ****" \
-	    && pacman -Sy \
-	    && su - steamshine -c 'git clone https://aur.archlinux.org/yay.git /tmp/yay && cd /tmp/yay && makepkg --noconfirm --syncdeps --install' \
-    && \
-    echo "**** Section cleanup ****" \
-	    && pacman -Scc --noconfirm \
-        && rm -fr /home/default/.cache/yay \
-        && rm -fr /var/lib/pacman/sync/* \
-        && rm -fr /var/cache/pacman/pkg/* \
-        && rm -rf /tmp/yay* \
-    && \
+    # echo "**** Section cleanup ****" \
+	#     && pacman -Scc --noconfirm \
+    #     && rm -fr /var/lib/pacman/sync/* \
+    #     && rm -fr /var/cache/pacman/pkg/* \
+    # && \
     echo
 
 # Install Wayland requirements
-ENV \
-    WAYLAND_DISPLAY="wayland-0"
 RUN \
     echo "**** Install Wayland requirements ****" \
-        && su - steamshine -c "yay -Syu --noconfirm --needed wayfire wf-config" \
         && pacman -Syu --noconfirm --needed \
             wayland \
             wayland-protocols \
             xorg-xwayland \
-            gamescope \
-        && setcap cap_sys_nice+p $(readlink -f $(which gamescope)) \
     && \
-    echo "**** Section cleanup ****" \
-        && pacman -Scc --noconfirm \
-        && rm -fr /var/lib/pacman/sync/* \
-        && rm -fr /var/cache/pacman/pkg/* \
+    # echo "**** Section cleanup ****" \
+    #     && pacman -Scc --noconfirm \
+    #     && rm -fr /var/lib/pacman/sync/* \
+    #     && rm -fr /var/cache/pacman/pkg/* \
+    # && \
+    echo
+
+# Setup audio management
+RUN \
+    echo "**** Install video streaming deps ****" \
+        && pacman -Syu --noconfirm --needed \
+            pipewire \
+            pipewire-pulse \
+            wireplumber \
     && \
+    # echo "**** Section cleanup ****" \
+	#     && pacman -Scc --noconfirm \
+    #     && rm -fr /var/lib/pacman/sync/* \
+    #     && rm -fr /var/cache/pacman/pkg/* \
+    # && \
     echo
 
 # Setup video streaming deps
@@ -104,29 +99,45 @@ RUN \
         && pacman -Syu --noconfirm --needed \
             libva \
             libva-mesa-driver \
-            libva-intel-driver \
+            nvidia-utils \
+            libva-nvidia-driver \
+            egl-wayland \
+
     && \
-    echo "**** Section cleanup ****" \
-	    && pacman -Scc --noconfirm \
-        && rm -fr /var/lib/pacman/sync/* \
-        && rm -fr /var/cache/pacman/pkg/* \
-    && \
+    # echo "**** Section cleanup ****" \
+	#     && pacman -Scc --noconfirm \
+    #     && rm -fr /var/lib/pacman/sync/* \
+    #     && rm -fr /var/cache/pacman/pkg/* \
+    # && \
     echo
 
 # Install tools for monitoring hardware
 RUN \
     echo "**** Install tools for monitoring hardware ****" \
         && pacman -Syu --noconfirm --needed \
-            #cpu-x \
             htop \
             libva-utils \
             vdpauinfo \
     && \
-    echo "**** Section cleanup ****" \
-	    && pacman -Scc --noconfirm \
-        && rm -fr /var/lib/pacman/sync/* \
-        && rm -fr /var/cache/pacman/pkg/* \
+    # echo "**** Section cleanup ****" \
+	#     && pacman -Scc --noconfirm \
+    #     && rm -fr /var/lib/pacman/sync/* \
+    #     && rm -fr /var/cache/pacman/pkg/* \
+    # && \
+    echo
+
+# Install compositor
+RUN \
+    echo "**** Install tools for monitoring hardware ****" \
+        && pacman -Syu --noconfirm --needed \
+            libinput \
+            sway \
     && \
+    # echo "**** Section cleanup ****" \
+	#     && pacman -Scc --noconfirm \
+    #     && rm -fr /var/lib/pacman/sync/* \
+    #     && rm -fr /var/cache/pacman/pkg/* \
+    # && \
     echo
 
 # Install Steam
@@ -136,11 +147,11 @@ RUN \
             steam \
             
     && \
-    echo "**** Section cleanup ****" \
-	    && pacman -Scc --noconfirm \
-        && rm -fr /var/lib/pacman/sync/* \
-        && rm -fr /var/cache/pacman/pkg/* \
-    && \
+    # echo "**** Section cleanup ****" \
+	#     && pacman -Scc --noconfirm \
+    #     && rm -fr /var/lib/pacman/sync/* \
+    #     && rm -fr /var/cache/pacman/pkg/* \
+    # && \
     echo
 
 # Initialize Steam directories with correct permissions
@@ -157,11 +168,11 @@ RUN \
         && setcap cap_sys_admin+p $(readlink -f $(which sunshine)) \
         && setcap cap_sys_nice+p $(readlink -f $(which sunshine)) \
     && \
-    echo "**** Section cleanup ****" \
-	    && pacman -Scc --noconfirm \
-        && rm -fr /var/lib/pacman/sync/* \
-        && rm -fr /var/cache/pacman/pkg/* \
-    && \
+    # echo "**** Section cleanup ****" \
+	#     && pacman -Scc --noconfirm \
+    #     && rm -fr /var/lib/pacman/sync/* \
+    #     && rm -fr /var/cache/pacman/pkg/* \
+    # && \
     echo
 
 # Setup machine-id
