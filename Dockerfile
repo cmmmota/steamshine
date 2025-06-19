@@ -99,10 +99,7 @@ RUN \
         && pacman -Syu --noconfirm --needed \
             libva \
             libva-mesa-driver \
-            nvidia-utils \
-            libva-nvidia-driver \
             egl-wayland \
-
     && \
     # echo "**** Section cleanup ****" \
 	#     && pacman -Scc --noconfirm \
@@ -128,10 +125,11 @@ RUN \
 
 # Install compositor
 RUN \
-    echo "**** Install tools for monitoring hardware ****" \
+    echo "**** Install compositor + seat manager ****" \
         && pacman -Syu --noconfirm --needed \
             libinput \
             sway \
+            seatd \
     && \
     # echo "**** Section cleanup ****" \
 	#     && pacman -Scc --noconfirm \
@@ -165,7 +163,6 @@ RUN \
         && pacman -Syu --noconfirm --needed \
             miniupnpc \
             lizardbyte/sunshine \
-        && setcap cap_sys_admin+p $(readlink -f $(which sunshine)) \
         && setcap cap_sys_nice+p $(readlink -f $(which sunshine)) \
     && \
     # echo "**** Section cleanup ****" \
@@ -174,6 +171,9 @@ RUN \
     #     && rm -fr /var/cache/pacman/pkg/* \
     # && \
     echo
+
+# After the line that already installs miniupnpc
+RUN ln -s libminiupnpc.so /usr/lib/libminiupnpc.so.19
 
 # Setup machine-id
 RUN systemd-machine-id-setup \

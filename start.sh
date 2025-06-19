@@ -2,8 +2,7 @@
 
 export XDG_RUNTIME_DIR=/tmp/xdg-runtime
 mkdir -p $XDG_RUNTIME_DIR
-chmod 700 $XDG_RUNTIME_DIR
-export WAYLAND_DISPLAY=wayland-1
+chmod 711 $XDG_RUNTIME_DIR
 
 export WLR_RENDERER=vulkan
 export WLR_BACKENDS=libinput,headless
@@ -12,7 +11,6 @@ export XDG_CURRENT_DESKTOP=sway
 export XDG_SESSION_DESKTOP=sway
 export XDG_SESSION_CLASS=user
 export XDG_SESSION_TYPE=wayland
-export XDG_RUNTIME_DIR=/run/user/1000
 
 sudo ldconfig
 
@@ -48,10 +46,15 @@ start_steam() {
 }
 
 start_sway() {
-    dbus-run-session sway --unsupported-gpu &
-    WAYFIRE_PID=$!
+    seatd-launch &
+    export SEATD_SOCK=$XDG_RUNTIME_DIR/seatd.sock
 
-    sleep 3
+    sleep 1
+
+    dbus-run-session sway --unsupported-gpu --seat seat0 &
+    SWAY_PID=$!
+
+    sleep 2
 }
 
 #Start compositor
@@ -59,8 +62,7 @@ start_sway
 
 # Start services
 start_sunshine
-
-start_steam
+#start_steam
 
 # Wait for either process to exit
 wait $STEAM_PID 
