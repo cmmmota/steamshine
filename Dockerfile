@@ -128,7 +128,7 @@ RUN \
     echo "**** Install compositor + seat manager ****" \
         && pacman -Syu --noconfirm --needed \
             libinput \
-            sway \
+            gamescope \
             seatd \
     && \
     # echo "**** Section cleanup ****" \
