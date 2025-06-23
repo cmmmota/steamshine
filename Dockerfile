@@ -1,5 +1,5 @@
 # Use Arch Linux as base
-FROM archlinux/archlinux:base@sha256:e407816b09850794ded7c3708c7e177d8c0fbaea79e6dc102e709a7bd0d0fc4d
+FROM archlinux/archlinux:base@sha256:11c454d6fc34dc3a2b8264574118b16d0b3ecf901c6e0d5eae42778abb900ef0
 
 # Set environment variables
 ENV DISPLAY_WIDTH=1920
@@ -147,7 +147,6 @@ RUN \
     echo "**** Install Steam ****" \
 	    && pacman -Syu --noconfirm --needed \
             steam \
-            
     && \
     # echo "**** Section cleanup ****" \
 	#     && pacman -Scc --noconfirm \
@@ -177,8 +176,8 @@ RUN \
 
 # Build and install latest Gamescope (with xdg_output support)
 RUN git clone --depth=1 https://github.com/ValveSoftware/gamescope.git /tmp/gamescope \
-    && cmake -B /tmp/gamescope/build -S /tmp/gamescope -DCMAKE_BUILD_TYPE=Release \
-    && cmake --build /tmp/gamescope/build --target install -j$(nproc) \
+    && meson setup --buildtype=release /tmp/gamescope/build /tmp/gamescope \
+    && ninja -C /tmp/gamescope/build install -j$(nproc) \
     && rm -rf /tmp/gamescope \
     && setcap cap_sys_admin,cap_sys_nice+ep $(readlink -f $(which gamescope)) $(readlink -f $(which sunshine))
 
