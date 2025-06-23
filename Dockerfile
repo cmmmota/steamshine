@@ -128,7 +128,11 @@ RUN \
     echo "**** Install compositor + seat manager ****" \
         && pacman -Syu --noconfirm --needed \
             libinput \
-            gamescope \
+            clang \
+            cmake \
+            meson \
+            ninja \
+            vulkan-headers \
             seatd \
     && \
     # echo "**** Section cleanup ****" \
@@ -163,7 +167,6 @@ RUN \
         && pacman -Syu --noconfirm --needed \
             miniupnpc \
             lizardbyte/sunshine \
-        && setcap cap_sys_nice+p $(readlink -f $(which sunshine)) \
     && \
     # echo "**** Section cleanup ****" \
 	#     && pacman -Scc --noconfirm \
@@ -171,6 +174,13 @@ RUN \
     #     && rm -fr /var/cache/pacman/pkg/* \
     # && \
     echo
+
+# Build and install latest Gamescope (with xdg_output support)
+RUN git clone --depth=1 https://github.com/ValveSoftware/gamescope.git /tmp/gamescope \
+    && cmake -B /tmp/gamescope/build -S /tmp/gamescope -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build /tmp/gamescope/build --target install -j$(nproc) \
+    && rm -rf /tmp/gamescope \
+    && setcap cap_sys_admin,cap_sys_nice+ep $(readlink -f $(which gamescope)) $(readlink -f $(which sunshine))
 
 # After the line that already installs miniupnpc
 RUN ln -s libminiupnpc.so /usr/lib/libminiupnpc.so.19

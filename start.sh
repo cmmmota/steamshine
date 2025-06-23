@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# ensure /dev/uinput is usable even if the host rule is missing
+sudo chgrp input /dev/uinput || true
+sudo chmod g+rw /dev/uinput || true
+
 export XDG_RUNTIME_DIR=/tmp/xdg-runtime
 mkdir -p $XDG_RUNTIME_DIR
 chmod 711 $XDG_RUNTIME_DIR
@@ -16,12 +20,13 @@ sudo ldconfig
 
 # Function to start Sunshine with appropriate GPU settings
 start_sunshine() {
-
-    until [ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]; do sleep 0.1; done
+    # Gamescope's fixed display name
+    export WAYLAND_DISPLAY="gamescope-0"
+    # give gamescope a moment to finish socket creation
+    sleep 1
     # Start Sunshine in the background
     sunshine &
     SUNSHINE_PID=$!
-    #echo "Sunshine is disabled"
 }
 
 start_gamescope() {
@@ -43,6 +48,10 @@ start_gamescope() {
 
     # Let Gamescope set up its WAYLAND_DISPLAY env var
     sleep 2                    # give Gamescope time to initialise
+
+    # immediately after launching gamescope …
+    export WAYLAND_DISPLAY=gamescope-0        # <- Gamescope's fixed socket name
+    sleep 2
 }
 
 # Start compositor (Gamescope) and Sunshine
