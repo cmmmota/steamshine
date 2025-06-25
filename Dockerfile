@@ -80,7 +80,7 @@ RUN \
 
 # Setup audio management
 RUN \
-    echo "**** Install video streaming deps ****" \
+    echo "**** Install audio management ****" \
         && pacman -Syu --noconfirm --needed \
             pipewire \
             pipewire-pulse \
@@ -134,6 +134,41 @@ RUN \
             ninja \
             vulkan-headers \
             seatd \
+            libx11 \
+            libxrandr \
+            libxinerama \
+            libxkbcommon \
+            libxcursor \
+            libxfixes \
+            libxdamage \
+            libxcomposite \
+            libxres \
+            libxmu \
+            xcb-util-renderutil \
+            xcb-util-wm \
+            xcb-util-errors \
+            libdisplay-info \
+            libdecor \
+            glm \
+            ffmpeg \
+            glslang \
+            libxtst \
+            luajit \
+    && \
+    # echo "**** Section cleanup ****" \
+	#     && pacman -Scc --noconfirm \
+    #     && rm -fr /var/lib/pacman/sync/* \
+    #     && rm -fr /var/cache/pacman/pkg/* \
+    # && \
+    echo
+
+# Build and install latest Gamescope (with xdg_output support)
+RUN \
+    echo "**** Build and install latest Gamescope (with xdg_output support) ****" \
+        && git clone --depth=1 --recurse-submodules --shallow-submodules https://github.com/ValveSoftware/gamescope.git /tmp/gamescope \
+        && meson setup --buildtype=release /tmp/gamescope/build /tmp/gamescope \
+        && ninja -C /tmp/gamescope/build install -j$(nproc) \
+        && rm -rf /tmp/gamescope \
     && \
     # echo "**** Section cleanup ****" \
 	#     && pacman -Scc --noconfirm \
@@ -174,12 +209,8 @@ RUN \
     # && \
     echo
 
-# Build and install latest Gamescope (with xdg_output support)
-RUN git clone --depth=1 https://github.com/ValveSoftware/gamescope.git /tmp/gamescope \
-    && meson setup --buildtype=release /tmp/gamescope/build /tmp/gamescope \
-    && ninja -C /tmp/gamescope/build install -j$(nproc) \
-    && rm -rf /tmp/gamescope \
-    && setcap cap_sys_admin,cap_sys_nice+ep $(readlink -f $(which gamescope)) $(readlink -f $(which sunshine))
+RUN setcap cap_sys_admin,cap_sys_nice+ep $(readlink -f $(which gamescope)) \
+    && setcap cap_sys_admin,cap_sys_nice+ep $(readlink -f $(which sunshine))
 
 # After the line that already installs miniupnpc
 RUN ln -s libminiupnpc.so /usr/lib/libminiupnpc.so.19
