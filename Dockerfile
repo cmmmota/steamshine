@@ -1,5 +1,5 @@
 # Use Arch Linux as base
-FROM archlinux/archlinux:base@sha256:779f09300c815e05d17ea65efa085a339d41a7931029390d3f90cfe4a10b166d
+FROM archlinux/archlinux:base@sha256:3bd6dfb3bc0250fb8f2bd9b7a10ccd7a56ba2016dd958a6e0dcfba37f0d1f2c3
 
 # Set environment variables
 ENV DISPLAY_WIDTH=1920
@@ -128,7 +128,12 @@ RUN \
     echo "**** Install compositor + seat manager ****" \
         && pacman -Syu --noconfirm --needed \
             libinput \
-            gamescope \
+            clang \
+            cmake \
+            meson \
+            ninja \
+            glslang \
+            vulkan-headers \
             seatd \
             libx11 \
             libxrandr \
@@ -149,6 +154,22 @@ RUN \
             ffmpeg \
             libxtst \
             luajit \
+    && \
+    # echo "**** Section cleanup ****" \
+	#     && pacman -Scc --noconfirm \
+    #     && rm -fr /var/lib/pacman/sync/* \
+    #     && rm -fr /var/cache/pacman/pkg/* \
+    # && \
+    echo
+
+# Build and install latest Gamescope (with xdg_output support)
+    
+RUN \
+    echo "**** Build and install latest Gamescope (with xdg_output support) ****" \
+        && git clone --depth=1 --recurse-submodules --shallow-submodules https://github.com/ValveSoftware/gamescope.git /tmp/gamescope \
+        && meson setup --buildtype=release -Dpipewire=enabled /tmp/gamescope/build /tmp/gamescope \
+        && ninja -C /tmp/gamescope/build install -j$(nproc) \
+        && rm -rf /tmp/gamescope \
     && \
     # echo "**** Section cleanup ****" \
 	#     && pacman -Scc --noconfirm \
