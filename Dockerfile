@@ -128,11 +128,7 @@ RUN \
     echo "**** Install compositor + seat manager ****" \
         && pacman -Syu --noconfirm --needed \
             libinput \
-            clang \
-            cmake \
-            meson \
-            ninja \
-            vulkan-headers \
+            gamescope \
             seatd \
             libx11 \
             libxrandr \
@@ -151,24 +147,8 @@ RUN \
             libdecor \
             glm \
             ffmpeg \
-            glslang \
             libxtst \
             luajit \
-    && \
-    # echo "**** Section cleanup ****" \
-	#     && pacman -Scc --noconfirm \
-    #     && rm -fr /var/lib/pacman/sync/* \
-    #     && rm -fr /var/cache/pacman/pkg/* \
-    # && \
-    echo
-
-# Build and install latest Gamescope (with xdg_output support)
-RUN \
-    echo "**** Build and install latest Gamescope (with xdg_output support) ****" \
-        && git clone --depth=1 --recurse-submodules --shallow-submodules https://github.com/ValveSoftware/gamescope.git /tmp/gamescope \
-        && meson setup --buildtype=release /tmp/gamescope/build /tmp/gamescope \
-        && ninja -C /tmp/gamescope/build install -j$(nproc) \
-        && rm -rf /tmp/gamescope \
     && \
     # echo "**** Section cleanup ****" \
 	#     && pacman -Scc --noconfirm \
