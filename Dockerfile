@@ -235,12 +235,6 @@ RUN mkdir -p /home/steamshine/.config/sunshine && \
     chown -R steamshine:steamshine /home/steamshine/.config/sunshine && \
     chmod -R 755 /home/steamshine/.config/sunshine
 
-# Copy custom EDID (supports 4K60 + 1440p60/120 HDR)
-RUN mkdir -p /usr/lib/firmware/edid \
-    && install -m 644 edid/steamshine.bin /usr/lib/firmware/edid/steamshine.bin
-
-ENV STEAMSHINE_EDID=/usr/lib/firmware/edid/steamshine.bin
-
 # Create startup script
 COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
