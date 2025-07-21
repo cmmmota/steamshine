@@ -161,29 +161,21 @@ RUN \
 
 RUN chmod u+s /usr/bin/seatd-launch
 
-# Build and install latest Gamescope (with xdg_output support)
-
+# Install Gamescope from repo
 RUN \
-    echo "**** Build and install latest Gamescope (with xdg_output support) ****" \
-        && git clone --depth=1 --recurse-submodules --shallow-submodules https://github.com/ValveSoftware/gamescope.git /tmp/gamescope \
-        && meson setup --buildtype=release -Dpipewire=enabled /tmp/gamescope/build /tmp/gamescope \
-        && ninja -C /tmp/gamescope/build install -j$(nproc) \
-        && rm -rf /tmp/gamescope \
+    echo "**** Install Gamescope from repo ****" \
+        && pacman -Syu --noconfirm --needed gamescope \
     && \
-    # echo "**** Section cleanup ****" \
-	#     && pacman -Scc --noconfirm \
-    #     && rm -fr /var/lib/pacman/sync/* \
-    #     && rm -fr /var/cache/pacman/pkg/* \
-    # && \
     echo
 
 # Avoid steam installing the wrong vulkan dependencies
 RUN \
     echo "**** Avoid steam installing the wrong vulkan dependencies ****" \
         && pacman -Syu --noconfirm --needed \
-        vulkan-icd-loader \
-        nvidia-utils \
-        lib32-nvidia-utils \
+        vulkan-swrast \
+        lib32-vulkan-swrast \
+        ttf-liberation \
+        --ignore vulkan-driver,lib32-vulkan-driver,nvidia-utils,lib32-nvidia-utils,amdvlk,lib32-amdvlk \
     && \
     # echo "**** Section cleanup ****" \
 	#     && pacman -Scc --noconfirm \
