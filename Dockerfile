@@ -8,8 +8,7 @@ ENV DISPLAY_REFRESH=60
 
 
 # Create non-root user
-RUN useradd -m -G video,audio,input steamshine && \
-    echo "steamshine ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+RUN useradd -m -G video,audio,input steamshine
 
 # Update package repos
 RUN \
@@ -37,7 +36,6 @@ RUN \
 RUN \
     echo "**** Install tools ****" \
 	    && pacman -Syu --noconfirm --needed \
-            sudo \
             dbus \
             bash \
             bash-completion \
@@ -45,7 +43,6 @@ RUN \
             less \
             nano \
             procps \
-            sudo \
             wget \
             which \
             vulkan-icd-loader \
@@ -163,7 +160,7 @@ RUN \
     echo
 
 # Build and install latest Gamescope (with xdg_output support)
-    
+
 RUN \
     echo "**** Build and install latest Gamescope (with xdg_output support) ****" \
         && git clone --depth=1 --recurse-submodules --shallow-submodules https://github.com/ValveSoftware/gamescope.git /tmp/gamescope \
@@ -215,11 +212,6 @@ RUN setcap cap_sys_admin,cap_sys_nice+ep $(readlink -f $(which gamescope)) \
 
 # After the line that already installs miniupnpc
 RUN ln -s libminiupnpc.so /usr/lib/libminiupnpc.so.19
-
-# Setup machine-id
-RUN systemd-machine-id-setup \
-    && mkdir -p /run/dbus/ \
-    && chown -R steamshine:steamshine /run/dbus/
 
 # Initialize Sunshine directories with correct permissions
 RUN mkdir -p /home/steamshine/.config/sunshine && \
