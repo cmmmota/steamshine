@@ -159,6 +159,8 @@ RUN \
     # && \
     echo
 
+RUN chmod u+s /usr/bin/seatd-launch
+
 # Build and install latest Gamescope (with xdg_output support)
 
 RUN \
@@ -167,6 +169,21 @@ RUN \
         && meson setup --buildtype=release -Dpipewire=enabled /tmp/gamescope/build /tmp/gamescope \
         && ninja -C /tmp/gamescope/build install -j$(nproc) \
         && rm -rf /tmp/gamescope \
+    && \
+    # echo "**** Section cleanup ****" \
+	#     && pacman -Scc --noconfirm \
+    #     && rm -fr /var/lib/pacman/sync/* \
+    #     && rm -fr /var/cache/pacman/pkg/* \
+    # && \
+    echo
+
+# Avoid steam installing the wrong vulkan dependencies
+RUN \
+    echo "**** Avoid steam installing the wrong vulkan dependencies ****" \
+        && pacman -Syu --noconfirm --needed \
+        vulkan-icd-loader \
+        nvidia-utils \
+        lib32-nvidia-utils \
     && \
     # echo "**** Section cleanup ****" \
 	#     && pacman -Scc --noconfirm \

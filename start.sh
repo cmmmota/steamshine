@@ -17,4 +17,4 @@ export DISPLAY_REFRESH_RATE="${DISPLAY_REFRESH_RATE:-60}"
 export WLR_RENDER_DRM_DEVICE=/dev/dri/card0
 
 # --- 4. exec Sunshine under seatd-launch -------------------------
-exec /usr/bin/seatd-launch -- sunshine
+exec seatd-launch dbus-run-session sunshine
