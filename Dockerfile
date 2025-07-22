@@ -1,5 +1,5 @@
 # Use Arch Linux as base
-FROM archlinux/archlinux:base@sha256:3bd6dfb3bc0250fb8f2bd9b7a10ccd7a56ba2016dd958a6e0dcfba37f0d1f2c3
+FROM archlinux/archlinux:base@sha256:ea70726a696f34f2ec1ff87a16520fce110ee212ea5edeec57762fe167bbc3e9
 
 # Set environment variables
 ENV DISPLAY_WIDTH=1920
