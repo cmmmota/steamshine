@@ -1,254 +1,108 @@
-# Use Arch Linux as base
-FROM archlinux/archlinux:base@sha256:4524236733437ff1f35531147aa444b32f674d9f328aebe06d3511be575c80a3
+# Use Ubuntu 24.04 LTS as base (Best for NVIDIA Container Toolkit compatibility)
+FROM ubuntu:24.04
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Set environment variables
 ENV DISPLAY_WIDTH=1920
 ENV DISPLAY_HEIGHT=1080
 ENV DISPLAY_REFRESH=60
+ENV NVIDIA_DRIVER_CAPABILITIES=all
+ENV NVIDIA_VISIBLE_DEVICES=all
+
+# 1. Install Base Dependencies + Graphics Stack
+#    We install explicit NVIDIA libs here to ensure the container has the userspace shims
+#    even if injection is partial.
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    nano \
+    gpg \
+    pkg-config \
+    software-properties-common \
+    libgl1-mesa-dri \
+    libnvidia-egl-wayland1 \
+    libglx-mesa0 \
+    libegl1 \
+    libgles2 \
+    vulkan-tools \
+    mesa-utils \
+    mesa-vulkan-drivers \
+    libnvidia-egl-wayland1 \
+    xwayland \
+    dbus-x11 \
+    libcap2-bin \
+    pulseaudio \
+    pipewire \
+    pipewire-pulse \
+    wireplumber \
+    locales \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Setup Locales
+RUN locale-gen en_US.UTF-8
 ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 
-# Generate locales (Required for Steam)
-RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
+# 3. Install Sunshine (LizardByte) - Download .deb directly
+RUN wget -O sunshine.deb "https://github.com/LizardByte/Sunshine/releases/download/v2025.1210.519/sunshine-ubuntu-24.04-amd64.deb" && \
+    apt-get update && apt-get install -y ./sunshine.deb && \
+    rm sunshine.deb && \
+    rm -rf /var/lib/apt/lists/*
 
+# 4. Install Steam
+#    Enable 32-bit architecture for Steam
+RUN dpkg --add-architecture i386 && \
+    apt-get update && \
+    apt-get install -y \
+    steam \
+    libgl1:i386 \
+    libglx-mesa0:i386 \
+    libgtk2.0-0:i386 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
-RUN useradd -m -G video,audio,input steamshine
+# 5. Install Gamescope (Compatible Version for Ubuntu 24.04)
+#    Ubuntu 24.04 dropped gamescope from repos.
+#    Newer versions (3.16+) require Wayland 1.23, which 24.04 lacks.
+#    We use v3.12.5 which is confirmed to work with system libraries.
+RUN wget -O gamescope.deb "https://github.com/akdor1154/gamescope-pkg/releases/download/v3.12.5-2/gamescope_3.12.5-2_amd64.deb" && \
+    apt-get update && \
+    apt-get install -y ./gamescope.deb && \
+    rm gamescope.deb && \
+    rm -rf /var/lib/apt/lists/*
 
-# Update package repos
-RUN \
-    echo "**** Update package manager ****" \
-        && sed -i 's/^NoProgressBar/#NoProgressBar/g' /etc/pacman.conf \
-        && echo -e "[multilib]\nInclude = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf \
-        && echo -e "\n[lizardbyte]\nSigLevel = Optional\nServer = https://github.com/LizardByte/pacman-repo/releases/latest/download" >> /etc/pacman.conf \
-    && \
-    echo
+# 6. Install Seatd (for direct DRM access)
+RUN apt-get update && apt-get install -y seatd libseat1 && \
+    rm -rf /var/lib/apt/lists/*
 
-# Re-install certificates
-RUN \
-    echo "**** Install certificates ****" \
-	    && pacman -Syu --noconfirm --needed \
-            ca-certificates \
-    && \
-    # echo "**** Section cleanup ****" \
-	#     && pacman -Scc --noconfirm \
-    #     && rm -fr /var/lib/pacman/sync/* \
-    #     && rm -fr /var/cache/pacman/pkg/* \
-    # && \
-    echo
+# Create non-root user (Groups should exist now after package installs)
+RUN useradd -m -G video,audio,input,render steamshine || \
+    (groupadd -f render && groupadd -f input && useradd -m -G video,audio,input,render steamshine)
 
-# Install core packages
-RUN \
-    echo "**** Install tools ****" \
-	    && pacman -Syu --noconfirm --needed \
-            dbus \
-            bash \
-            bash-completion \
-            curl \
-            less \
-            nano \
-            procps \
-            wget \
-            which \
-            vulkan-icd-loader \
-            vulkan-tools \
-            mesa-utils \
-            git \
-            fakeroot \
-            base-devel \
-            debugedit \
-    && \
-    # echo "**** Section cleanup ****" \
-	#     && pacman -Scc --noconfirm \
-    #     && rm -fr /var/lib/pacman/sync/* \
-    #     && rm -fr /var/cache/pacman/pkg/* \
-    # && \
-    echo
+# 7. Setup Directories & Permissions
+RUN mkdir -p /home/steamshine/.steam /home/steamshine/.local/share/Steam \
+    /home/steamshine/.config/sunshine /home/steamshine/.config/gamescope && \
+    chown -R steamshine:steamshine /home/steamshine
 
-# Install Wayland requirements
-RUN \
-    echo "**** Install Wayland requirements ****" \
-        && pacman -Syu --noconfirm --needed \
-            wayland \
-            wayland-protocols \
-            xorg-xwayland \
-    && \
-    # echo "**** Section cleanup ****" \
-    #     && pacman -Scc --noconfirm \
-    #     && rm -fr /var/lib/pacman/sync/* \
-    #     && rm -fr /var/cache/pacman/pkg/* \
-    # && \
-    echo
+# Generate machine-id for dbus
+RUN dbus-uuidgen > /etc/machine-id
 
-# Setup audio management
-RUN \
-    echo "**** Install audio management ****" \
-        && pacman -Syu --noconfirm --needed \
-            pipewire \
-            pipewire-pulse \
-            wireplumber \
-    && \
-    # echo "**** Section cleanup ****" \
-	#     && pacman -Scc --noconfirm \
-    #     && rm -fr /var/lib/pacman/sync/* \
-    #     && rm -fr /var/cache/pacman/pkg/* \
-    # && \
-    echo
+# Grant capabilities for Gamescope priority/nice
+RUN setcap 'cap_sys_nice=eip' $(which gamescope) || true
 
-# Setup video streaming deps
-RUN \
-    echo "**** Install video streaming deps ****" \
-        && pacman -Syu --noconfirm --needed \
-            libva \
-            libva-mesa-driver \
-            egl-wayland \
-    && \
-    # echo "**** Section cleanup ****" \
-	#     && pacman -Scc --noconfirm \
-    #     && rm -fr /var/lib/pacman/sync/* \
-    #     && rm -fr /var/cache/pacman/pkg/* \
-    # && \
-    echo
-
-# Install tools for monitoring hardware
-RUN \
-    echo "**** Install tools for monitoring hardware ****" \
-        && pacman -Syu --noconfirm --needed \
-            htop \
-            libva-utils \
-            vdpauinfo \
-    && \
-    # echo "**** Section cleanup ****" \
-	#     && pacman -Scc --noconfirm \
-    #     && rm -fr /var/lib/pacman/sync/* \
-    #     && rm -fr /var/cache/pacman/pkg/* \
-    # && \
-    echo
-
-# Install compositor
-RUN \
-    echo "**** Install compositor + seat manager ****" \
-        && pacman -Syu --noconfirm --needed \
-            libinput \
-            clang \
-            cmake \
-            meson \
-            ninja \
-            glslang \
-            vulkan-headers \
-            seatd \
-            libx11 \
-            libxrandr \
-            libxinerama \
-            libxkbcommon \
-            libxcursor \
-            libxfixes \
-            libxdamage \
-            libxcomposite \
-            libxres \
-            libxmu \
-            xcb-util-renderutil \
-            xcb-util-wm \
-            xcb-util-errors \
-            libdisplay-info \
-            libdecor \
-            glm \
-            ffmpeg \
-            libxtst \
-            luajit \
-    && \
-    # echo "**** Section cleanup ****" \
-	#     && pacman -Scc --noconfirm \
-    #     && rm -fr /var/lib/pacman/sync/* \
-    #     && rm -fr /var/cache/pacman/pkg/* \
-    # && \
-    echo
-
-RUN chmod u+s /usr/bin/seatd-launch
-
-# Install Gamescope from repo
-RUN \
-    echo "**** Install Gamescope from repo ****" \
-        && pacman -Syu --noconfirm --needed gamescope \
-    && \
-    echo
-
-# Avoid steam installing the wrong vulkan dependencies
-RUN \
-    echo "**** Avoid steam installing the wrong vulkan dependencies ****" \
-        && pacman -Syu --noconfirm --needed \
-        vulkan-swrast \
-        lib32-vulkan-swrast \
-        ttf-liberation \
-        --ignore vulkan-driver,lib32-vulkan-driver,nvidia-utils,lib32-nvidia-utils,amdvlk,lib32-amdvlk \
-    && \
-    # echo "**** Section cleanup ****" \
-	#     && pacman -Scc --noconfirm \
-    #     && rm -fr /var/lib/pacman/sync/* \
-    #     && rm -fr /var/cache/pacman/pkg/* \
-    # && \
-    echo
-
-# Install Steam
-RUN \
-    echo "**** Install Steam ****" \
-	    && pacman -Syu --noconfirm --needed \
-            steam \
-    && \
-    # echo "**** Section cleanup ****" \
-	#     && pacman -Scc --noconfirm \
-    #     && rm -fr /var/lib/pacman/sync/* \
-    #     && rm -fr /var/cache/pacman/pkg/* \
-    # && \
-    echo
-
-# Initialize Steam directories with correct permissions
-RUN mkdir -p /home/steamshine/.steam /home/steamshine/.local/share/Steam && \
-    chown -R steamshine:steamshine /home/steamshine && \
-    chmod -R 755 /home/steamshine/.steam /home/steamshine/.local/share/Steam && \
-    # Generate machine-id for dbus
-    dbus-uuidgen > /etc/machine-id
-
-# Install Sunshine from official repo
-RUN \
-    echo "**** Install Sunshine ****" \
-        && pacman -Syu --noconfirm --needed \
-            miniupnpc \
-            lizardbyte/sunshine \
-    && \
-    # echo "**** Section cleanup ****" \
-	#     && pacman -Scc --noconfirm \
-    #     && rm -fr /var/lib/pacman/sync/* \
-    #     && rm -fr /var/cache/pacman/pkg/* \
-    # && \
-    echo
-
-RUN setcap cap_sys_admin,cap_sys_nice+ep $(readlink -f $(which gamescope)) \
-    && setcap cap_sys_admin,cap_sys_nice+ep $(readlink -f $(which sunshine))
-
-# After the line that already installs miniupnpc
-RUN ln -s libminiupnpc.so /usr/lib/libminiupnpc.so.19
-
-# Initialize Sunshine directories with correct permissions
-RUN mkdir -p /home/steamshine/.config/sunshine && \
-    chown -R steamshine:steamshine /home/steamshine/.config/sunshine && \
-    chmod -R 755 /home/steamshine/.config/sunshine
-
-# Create GBM directory and grant permissions for runtime symlinking
-RUN mkdir -p /usr/lib/gbm && \
-    chown steamshine:steamshine /usr/lib/gbm
-
-# Create startup scripts
+# Copy startup scripts
 COPY start.sh /usr/local/bin/start.sh
 COPY sunshine-wrapper.sh /usr/local/bin/sunshine-wrapper.sh
 RUN chmod +x /usr/local/bin/start.sh /usr/local/bin/sunshine-wrapper.sh
 
-# Set up volumes
-VOLUME ["/home/steamshine/.steam", "/home/steamshine/.local/share/sunshine"]
-
-# Switch to non-root user
+# Switch to user
 USER steamshine
 WORKDIR /home/steamshine
 
-# Set entrypoint
-ENTRYPOINT ["/usr/local/bin/start.sh"] 
+# Volumes
+VOLUME ["/home/steamshine/.steam", "/home/steamshine/.local/share/sunshine"]
+
+ENTRYPOINT ["/usr/local/bin/start.sh"]

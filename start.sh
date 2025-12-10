@@ -1,103 +1,87 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 0. head-less input quirk
-export WLR_LIBINPUT_NO_DEVICES=1
-export GBM_BACKEND=nvidia-drm
+#!/bin/bash
+
+# --- 1. Force Nvidia Driver Configuration ---
+# These are MANDATORY for Gamescope on Nvidia
+export EGL_PLATFORM=surfaceless
+export WLR_RENDERER=vulkan
 export __GLX_VENDOR_LIBRARY_NAME=nvidia
-export EGL_PLATFORM=wayland
+export __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json
 
-# -------------------------------------------------------------
-# 0.5 Runtime Library Fixup (NVIDIA GBM)
-# -------------------------------------------------------------
-# Locate the injected NVIDIA GBM library
-NVIDIA_GBM_LIB=$(find /usr -name "libnvidia-egl-gbm.so.1*" 2>/dev/null | head -n 1)
+# [NEW] Force GBM Backend (Fixes 'zero modifiers' error)
+export GBM_BACKEND=nvidia-drm
+export WLR_BACKEND=headless
 
-if [ -n "$NVIDIA_GBM_LIB" ]; then
-    echo "Found NVIDIA GBM library at: $NVIDIA_GBM_LIB"
-    # Symlink it to where Mesa expects it (we have write access to /usr/lib/gbm from Dockerfile)
-    ln -sf "$NVIDIA_GBM_LIB" /usr/lib/gbm/nvidia-drm_gbm.so
-    ln -sf "$NVIDIA_GBM_LIB" /usr/lib/gbm/dri_gbm.so
-    
-    # Also ensure the directory containing the original lib is in LD_LIBRARY_PATH
-    LIB_DIR=$(dirname "$NVIDIA_GBM_LIB")
-    export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:${LIB_DIR}"
-else
-    echo "WARNING: Could not find libnvidia-egl-gbm.so injected in the container!"
+# --- 2. Auto-Launch D-Bus Session (Safe Mode) ---
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+    echo "--- [Fix] No D-Bus found. Relaunching script inside dbus-run-session... ---"
+    exec dbus-run-session -- "$0" "$@"
 fi
 
-# -------------------------------------------------------------
-# 1. Environment defaults (overridable via –e in Helm values)
-# -------------------------------------------------------------
-export TZ="${TZ:-UTC}"
+# --- 3. Clean up previous locks ---
+rm -rf /tmp/.X11-unix
+rm -f /dev/shm/user/$(id -u)/pipewire-0-manager.lock
 
-export DISPLAY_WIDTH="${DISPLAY_WIDTH:-2560}"
-export DISPLAY_HEIGHT="${DISPLAY_HEIGHT:-1440}"
-export DISPLAY_REFRESH_RATE="${DISPLAY_REFRESH_RATE:-60}"
+# ---------------------------------------------------------
+# YOUR ORIGINAL SCRIPT STARTS BELOW THIS LINE
+# ---------------------------------------------------------
 
-export SUNSHINE_CAPTURE="wayland"
-export SUNSHINE_ENCODER="${SUNSHINE_ENCODER:-nvenc}"
-
-# Ensure Sunshine knows where to look
-# export WAYLAND_DISPLAY="gamescope-0" # MOVED to wrapper invocation to prevent Gamescope nesting loop
-
-# -------------------------------------------------------------
-# 2. XDG runtime dir (Wayland socket lives here)
-# -------------------------------------------------------------
-# Secure the XDG_RUNTIME_DIR first (dbus requires 700)
+# 0. Environment Setup
 export XDG_RUNTIME_DIR=/dev/shm/user/$(id -u)
 mkdir -p "${XDG_RUNTIME_DIR}"
 chmod 700 "${XDG_RUNTIME_DIR}"
 
-# -------------------------------------------------------------
-# 2.5 NVIDIA / Vulkan Setup
-# -------------------------------------------------------------
-# Dynamically locate the NVIDIA ICD to prevent swrast fallback
-# The NVIDIA Container Toolkit mounts this file, but the location varies
-if [ -f "/etc/vulkan/icd.d/nvidia_icd.json" ]; then
-    export VK_DRIVER_FILES="/etc/vulkan/icd.d/nvidia_icd.json"
-    echo "Found NVIDIA ICD at /etc/vulkan/icd.d/nvidia_icd.json"
-elif [ -f "/usr/share/vulkan/icd.d/nvidia_icd.json" ]; then
-    export VK_DRIVER_FILES="/usr/share/vulkan/icd.d/nvidia_icd.json"
-    echo "Found NVIDIA ICD at /usr/share/vulkan/icd.d/nvidia_icd.json"
-else
-    echo "WARNING: NVIDIA ICD not found in standard locations. Vulkan may fallback to swrast!"
+# --- CLEANUP STALE SOCKETS ---
+echo "[start] Cleaning up stale sockets..."
+rm -rf "${XDG_RUNTIME_DIR}/pulse"
+rm -f "${XDG_RUNTIME_DIR}/pipewire-0"
+rm -f "${XDG_RUNTIME_DIR}/pipewire-0.lock"
+rm -f "${XDG_RUNTIME_DIR}/wayland-0" 
+rm -f "${XDG_RUNTIME_DIR}/gamescope-0"
+
+export TZ="${TZ:-UTC}"
+export DISPLAY_WIDTH="${DISPLAY_WIDTH:-1920}"
+export DISPLAY_HEIGHT="${DISPLAY_HEIGHT:-1080}"
+export DISPLAY_REFRESH="${DISPLAY_REFRESH:-60}"
+
+# 1. Start Audio Services (PipeWire)
+echo "[start] Starting Audio Stack..."
+if ! pgrep -x "dbus-daemon" > /dev/null; then
+    dbus-daemon --session --address="unix:path=${XDG_RUNTIME_DIR}/bus" --fork
 fi
-
-# -------------------------------------------------------------
-# 3. Audio Services (Critical for Steam stability)
-# -------------------------------------------------------------
-# Start DBus FIRST - PipeWire needs it!
-dbus-daemon --session \
-  --address="unix:path=${XDG_RUNTIME_DIR}/bus" \
-  --fork
 export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
-sleep 1
 
-# Start PipeWire and WirePlumber in background
 pipewire &
 sleep 1
 wireplumber &
 sleep 1
-# Start PipeWire PulseAudio adapter
 pipewire-pulse &
+sleep 1
 
-# -------------------------------------------------------------
-# 5. Launch Gamescope (Wayland compositor) under seatd,
-#    then hand off to Sunshine.
-#
-#    • --backend drm             – real KMS backend (needed for XDG-OUTPUT)
-#    • --expose-wayland          – make WAYLAND_DISPLAY visible to children
-#    • --prefer-output           – force specific output if available
-# -------------------------------------------------------------
-exec /usr/bin/seatd-launch -- \
-  gamescope \
-    --backend drm \
+# 2. NVIDIA / Vulkan / EGL Setup (Explicit Paths)
+echo "[start] Configuring Graphics Drivers..."
+
+# FORCE VULKAN ICD (Path verified from your diagnostics)
+export VK_DRIVER_FILES="/etc/vulkan/icd.d/nvidia_icd.json"
+
+# FORCE EGL VENDOR (Path verified from your diagnostics)
+# This prevents Xwayland from falling back to software (which crashes)
+export __EGL_VENDOR_LIBRARY_FILENAMES="/usr/share/glvnd/egl_vendor.d/10_nvidia.json"
+
+
+# 3. Launch Gamescope
+echo "[start] Launching Gamescope..."
+
+# Using headless backend - NO seatd required
+GAMESCOPE_BACKEND="headless" 
+
+exec gamescope \
+    --"${GAMESCOPE_BACKEND}" \
     --expose-wayland \
-    --prefer-output "HDMI-A-1" \
     -W "${DISPLAY_WIDTH}" \
     -H "${DISPLAY_HEIGHT}" \
-    -r "${DISPLAY_REFRESH_RATE}" \
-    -f \
+    -r "${DISPLAY_REFRESH}" \
     -- \
-  env SUNSHINE_CAPTURE="x11" DISPLAY=":0" /usr/local/bin/sunshine-wrapper.sh
+  env /usr/local/bin/sunshine-wrapper.sh
