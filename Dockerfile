@@ -234,9 +234,14 @@ RUN mkdir -p /home/steamshine/.config/sunshine && \
     chown -R steamshine:steamshine /home/steamshine/.config/sunshine && \
     chmod -R 755 /home/steamshine/.config/sunshine
 
-# Create startup script
+# Create GBM directory and grant permissions for runtime symlinking
+RUN mkdir -p /usr/lib/gbm && \
+    chown steamshine:steamshine /usr/lib/gbm
+
+# Create startup scripts
 COPY start.sh /usr/local/bin/start.sh
-RUN chmod +x /usr/local/bin/start.sh
+COPY sunshine-wrapper.sh /usr/local/bin/sunshine-wrapper.sh
+RUN chmod +x /usr/local/bin/start.sh /usr/local/bin/sunshine-wrapper.sh
 
 # Set up volumes
 VOLUME ["/home/steamshine/.steam", "/home/steamshine/.local/share/sunshine"]

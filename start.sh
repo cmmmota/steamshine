@@ -3,6 +3,28 @@ set -euo pipefail
 
 # 0. head-less input quirk
 export WLR_LIBINPUT_NO_DEVICES=1
+export GBM_BACKEND=nvidia-drm
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+export EGL_PLATFORM=wayland
+
+# -------------------------------------------------------------
+# 0.5 Runtime Library Fixup (NVIDIA GBM)
+# -------------------------------------------------------------
+# Locate the injected NVIDIA GBM library
+NVIDIA_GBM_LIB=$(find /usr -name "libnvidia-egl-gbm.so.1*" 2>/dev/null | head -n 1)
+
+if [ -n "$NVIDIA_GBM_LIB" ]; then
+    echo "Found NVIDIA GBM library at: $NVIDIA_GBM_LIB"
+    # Symlink it to where Mesa expects it (we have write access to /usr/lib/gbm from Dockerfile)
+    ln -sf "$NVIDIA_GBM_LIB" /usr/lib/gbm/nvidia-drm_gbm.so
+    ln -sf "$NVIDIA_GBM_LIB" /usr/lib/gbm/dri_gbm.so
+    
+    # Also ensure the directory containing the original lib is in LD_LIBRARY_PATH
+    LIB_DIR=$(dirname "$NVIDIA_GBM_LIB")
+    export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:${LIB_DIR}"
+else
+    echo "WARNING: Could not find libnvidia-egl-gbm.so injected in the container!"
+fi
 
 # -------------------------------------------------------------
 # 1. Environment defaults (overridable via –e in Helm values)
@@ -13,8 +35,11 @@ export DISPLAY_WIDTH="${DISPLAY_WIDTH:-2560}"
 export DISPLAY_HEIGHT="${DISPLAY_HEIGHT:-1440}"
 export DISPLAY_REFRESH_RATE="${DISPLAY_REFRESH_RATE:-60}"
 
-export SUNSHINE_CAPTURE="${SUNSHINE_CAPTURE:-kms}"
+export SUNSHINE_CAPTURE="wayland"
 export SUNSHINE_ENCODER="${SUNSHINE_ENCODER:-nvenc}"
+
+# Ensure Sunshine knows where to look
+# export WAYLAND_DISPLAY="gamescope-0" # MOVED to wrapper invocation to prevent Gamescope nesting loop
 
 # -------------------------------------------------------------
 # 2. XDG runtime dir (Wayland socket lives here)
@@ -38,10 +63,6 @@ elif [ -f "/usr/share/vulkan/icd.d/nvidia_icd.json" ]; then
 else
     echo "WARNING: NVIDIA ICD not found in standard locations. Vulkan may fallback to swrast!"
 fi
-
-# Ensure we look in 32-bit directories for Steam dependencies
-# (The Container Toolkit might mount them, but they need to be in the path)
-export LD_LIBRARY_PATH="/usr/lib32:/usr/lib:${LD_LIBRARY_PATH:-}"
 
 # -------------------------------------------------------------
 # 3. Audio Services (Critical for Steam stability)
@@ -79,4 +100,4 @@ exec /usr/bin/seatd-launch -- \
     -r "${DISPLAY_REFRESH_RATE}" \
     -f \
     -- \
-  sunshine
+  env SUNSHINE_CAPTURE="x11" DISPLAY=":0" /usr/local/bin/sunshine-wrapper.sh
