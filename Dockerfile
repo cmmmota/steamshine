@@ -5,6 +5,11 @@ FROM archlinux/archlinux:base@sha256:4524236733437ff1f35531147aa444b32f674d9f328
 ENV DISPLAY_WIDTH=1920
 ENV DISPLAY_HEIGHT=1080
 ENV DISPLAY_REFRESH=60
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+
+# Generate locales (Required for Steam)
+RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
 
 
 # Create non-root user
@@ -200,7 +205,9 @@ RUN \
 # Initialize Steam directories with correct permissions
 RUN mkdir -p /home/steamshine/.steam /home/steamshine/.local/share/Steam && \
     chown -R steamshine:steamshine /home/steamshine && \
-    chmod -R 755 /home/steamshine/.steam /home/steamshine/.local/share/Steam
+    chmod -R 755 /home/steamshine/.steam /home/steamshine/.local/share/Steam && \
+    # Generate machine-id for dbus
+    dbus-uuidgen > /etc/machine-id
 
 # Install Sunshine from official repo
 RUN \
