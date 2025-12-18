@@ -1,87 +1,95 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -e
 
-#!/bin/bash
+# --- 0. Cleanup & Traps ---
+# Function to cleanup background processes on exit
+cleanup() {
+    echo "[start] Shutting down..."
+    # Kill all child processes in the current process group
+    pkill -P $$ || true
+    wait
+}
+trap cleanup EXIT INT TERM
 
-# --- 1. Force Nvidia Driver Configuration ---
-# These are MANDATORY for Gamescope on Nvidia
-export EGL_PLATFORM=surfaceless
-export WLR_RENDERER=vulkan
-export __GLX_VENDOR_LIBRARY_NAME=nvidia
-export __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json
+# --- 1. Environment Setup ---
+# Try standard location first
+export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 
-# [NEW] Force GBM Backend (Fixes 'zero modifiers' error)
-export GBM_BACKEND=nvidia-drm
-export WLR_BACKEND=headless
-
-# --- 2. Auto-Launch D-Bus Session (Safe Mode) ---
-if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
-    echo "--- [Fix] No D-Bus found. Relaunching script inside dbus-run-session... ---"
-    exec dbus-run-session -- "$0" "$@"
+# Fallback to /tmp if needed
+if [ ! -d "$XDG_RUNTIME_DIR" ]; then
+    if ! mkdir -p "$XDG_RUNTIME_DIR" 2>/dev/null; then
+        echo "[start] Cannot create $XDG_RUNTIME_DIR. Falling back to /tmp..."
+        export XDG_RUNTIME_DIR="/tmp/runtime-$(id -u)"
+    fi
 fi
 
-# --- 3. Clean up previous locks ---
-rm -rf /tmp/.X11-unix
-rm -f /dev/shm/user/$(id -u)/pipewire-0-manager.lock
-
-# ---------------------------------------------------------
-# YOUR ORIGINAL SCRIPT STARTS BELOW THIS LINE
-# ---------------------------------------------------------
-
-# 0. Environment Setup
-export XDG_RUNTIME_DIR=/dev/shm/user/$(id -u)
 mkdir -p "${XDG_RUNTIME_DIR}"
 chmod 700 "${XDG_RUNTIME_DIR}"
 
-# --- CLEANUP STALE SOCKETS ---
+# Clean up stale sockets/locks
 echo "[start] Cleaning up stale sockets..."
 rm -rf "${XDG_RUNTIME_DIR}/pulse"
 rm -f "${XDG_RUNTIME_DIR}/pipewire-0"
 rm -f "${XDG_RUNTIME_DIR}/pipewire-0.lock"
 rm -f "${XDG_RUNTIME_DIR}/wayland-0" 
 rm -f "${XDG_RUNTIME_DIR}/gamescope-0"
+rm -f "${XDG_RUNTIME_DIR}/bus"
 
 export TZ="${TZ:-UTC}"
 export DISPLAY_WIDTH="${DISPLAY_WIDTH:-1920}"
 export DISPLAY_HEIGHT="${DISPLAY_HEIGHT:-1080}"
 export DISPLAY_REFRESH="${DISPLAY_REFRESH:-60}"
 
-# 1. Start Audio Services (PipeWire)
-echo "[start] Starting Audio Stack..."
-if ! pgrep -x "dbus-daemon" > /dev/null; then
-    dbus-daemon --session --address="unix:path=${XDG_RUNTIME_DIR}/bus" --fork
+# NOTE: Do NOT export WAYLAND_DISPLAY here. 
+# Gamescope will set it for the nested session. 
+# Exporting it here confuses Gamescope into thinking it's a nested client itself.
+
+# --- 2. D-Bus Session ---
+echo "[start] Starting D-Bus..."
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+    if [ ! -f /etc/machine-id ]; then
+        sudo dbus-uuidgen --ensure=/etc/machine-id
+    fi
+    # Start dbus-daemon
+    dbus-daemon --session --address="unix:path=${XDG_RUNTIME_DIR}/bus" --fork --print-address
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
 fi
-export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
 
+# --- 3. Start Audio Services (PipeWire) ---
+echo "[start] Starting Audio Stack..."
 pipewire &
+PID_PW=$!
 sleep 1
+
 wireplumber &
+PID_WP=$!
 sleep 1
+
 pipewire-pulse &
+PID_PWP=$!
 sleep 1
 
-# 2. NVIDIA / Vulkan / EGL Setup (Explicit Paths)
-echo "[start] Configuring Graphics Drivers..."
+# Check if they are still running
+if ! kill -0 $PID_PW 2>/dev/null; then
+    echo "[error] PipeWire died!"
+    exit 1
+fi
+if ! kill -0 $PID_WP 2>/dev/null; then
+    echo "[error] WirePlumber died!"
+    exit 1
+fi
 
-# FORCE VULKAN ICD (Path verified from your diagnostics)
-export VK_DRIVER_FILES="/etc/vulkan/icd.d/nvidia_icd.json"
-
-# FORCE EGL VENDOR (Path verified from your diagnostics)
-# This prevents Xwayland from falling back to software (which crashes)
-export __EGL_VENDOR_LIBRARY_FILENAMES="/usr/share/glvnd/egl_vendor.d/10_nvidia.json"
+# --- 4. Launch Gamescope ---
+echo "[start] Launching Gamescope (AMD/Headless)..."
 
 
-# 3. Launch Gamescope
-echo "[start] Launching Gamescope..."
-
-# Using headless backend - NO seatd required
-GAMESCOPE_BACKEND="headless" 
-
+# Gamescope Arguments
 exec gamescope \
-    --"${GAMESCOPE_BACKEND}" \
+    --backend drm \
+    --headless \
     --expose-wayland \
     -W "${DISPLAY_WIDTH}" \
     -H "${DISPLAY_HEIGHT}" \
     -r "${DISPLAY_REFRESH}" \
     -- \
-  env /usr/local/bin/sunshine-wrapper.sh
+    /usr/local/bin/sunshine-wrapper.sh

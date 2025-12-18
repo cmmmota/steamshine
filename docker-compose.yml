@@ -2,19 +2,30 @@ services:
   steamshine:
     build: .
     image: ghcr.io/${GITHUB_REPOSITORY:-cmmmota/steamshine}
+    ports:
+      - "47984:47984/tcp"
+      - "47989:47989/tcp"
+      - "47990:47990/tcp" # Web UI
+      - "47998:47998/udp"
+      - "47999:47999/udp"
+      - "48000:48000/udp"
+      - "48010:48010/udp"
     volumes:
       - steam-data:/home/steamshine/.steam
       - sunshine-config:/home/steamshine/.config/sunshine
+      - /dev/uinput:/dev/uinput # Critical for gamepad support
     devices:
-      - /dev/dri:/dev/dri
+      - /dev/dri:/dev/dri # GPU Access
     privileged: true
     cap_add:
       - SYS_ADMIN
+      - SYS_NICE
     security_opt:
       - seccomp=unconfined
+    shm_size: '2gb' # Prevent crashes in some games/compositors
 
 volumes:
   steam-data:
     name: steamshine-steam-data
   sunshine-config:
-    name: steamshine-sunshine-config 
+    name: steamshine-sunshine-config
