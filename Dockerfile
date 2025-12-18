@@ -1,5 +1,5 @@
 # Use Arch Linux as base
-FROM archlinux:latest
+FROM archlinux:latest@sha256:69a7520c58d27f1b2ee52dd61f6496e632582616b89c7952865f56b44617772b
 
 # Prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
