@@ -89,6 +89,15 @@ if [ -e /dev/uinput ] && [ ! -w /dev/uinput ]; then
     sudo chown root:input /dev/uinput
 fi
 
+# Ensure /dev/dri devices are accessible (needed for VAAPI encoding)
+echo "[start] Fixing DRI device permissions..."
+for dev in /dev/dri/card* /dev/dri/renderD*; do
+    if [ -e "$dev" ] && [ ! -r "$dev" ]; then
+        echo "[start] Fixing permissions for $dev..."
+        sudo chmod 666 "$dev"
+    fi
+done
+
 # Gamescope Arguments
 # Note: We do NOT export XDG_RUNTIME_DIR for gamescope itself if we can help it, 
 # but it NEEDS it to create sockets.

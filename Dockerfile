@@ -54,6 +54,7 @@ RUN pacman -Sy --noconfirm && \
     mesa-utils \
     lib32-mesa-utils \
     libva-utils \
+    wayland-utils \
     && pacman -Scc --noconfirm
 
 # 3. Setup User
