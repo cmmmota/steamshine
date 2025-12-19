@@ -82,11 +82,35 @@ fi
 # --- 4. Launch Gamescope ---
 echo "[start] Launching Gamescope (AMD/Headless)..."
 
+# Ensure /dev/uinput is writable (needed for Sunshine input)
+if [ -e /dev/uinput ] && [ ! -w /dev/uinput ]; then
+    echo "[start] Fixing /dev/uinput permissions..."
+    sudo chmod 660 /dev/uinput
+    sudo chown root:input /dev/uinput
+fi
 
 # Gamescope Arguments
+# Note: We do NOT export XDG_RUNTIME_DIR for gamescope itself if we can help it, 
+# but it NEEDS it to create sockets.
+# The error "XDG_RUNTIME_DIR is invalid or not set in the environment" suggests gamescope
+# is sanitizing the env or looking for it and failing.
+#
+# But strangely, when running manually:
+# [gamescope] [Info]  wlserver: [wayland] error: XDG_RUNTIME_DIR is invalid or not set in the environment
+# ...
+# [gamescope] [Error] wlserver: Unable to open wayland socket: No such file or directory
+#
+# This implies gamescope cannot WRITE to the socket dir.
+#
+# Let's ensure XDG_RUNTIME_DIR is exported and valid.
+
+# Force Mesa driver for VAAPI if not set
+export LIBVA_DRIVER_NAME="${LIBVA_DRIVER_NAME:-radeonsi}"
+# Force Vulkan driver (usually optional but good for debugging)
+# export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.x86_64.json
+
 exec gamescope \
-    --backend drm \
-    --headless \
+    --backend headless \
     --expose-wayland \
     -W "${DISPLAY_WIDTH}" \
     -H "${DISPLAY_HEIGHT}" \

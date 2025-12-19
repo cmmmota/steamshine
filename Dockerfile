@@ -53,12 +53,14 @@ RUN pacman -Sy --noconfirm && \
     wqy-zenhei \
     mesa-utils \
     lib32-mesa-utils \
+    libva-utils \
     && pacman -Scc --noconfirm
 
 # 3. Setup User
 # Note: 'render' group is crucial for DRI access on many systems (including Arch)
 RUN groupadd -r render 2>/dev/null || true && \
     useradd -m -G video,audio,input,storage,wheel,render steamshine && \
+    chmod 660 /dev/uinput 2>/dev/null || true && \
     echo "steamshine ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 # 4. Setup Directories & Permissions
