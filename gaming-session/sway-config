@@ -7,13 +7,14 @@ output HEADLESS-1 {
     scale 1
 }
 
-# Disable default bar (not needed for streaming)
+# Disable default bar completely (not needed for streaming)
 bar {
     mode invisible
+    tray_output none
 }
 
-# Set wallpaper (optional - black background)
-output * bg #000000 solid_color
+# Explicitly disable swaybg
+swaybg_command -
 
 # Start with a terminal for debugging (optional)
 # exec foot
@@ -57,9 +58,8 @@ input * {
     accel_profile flat
 }
 
-# Idle configuration - disable screen blanking
-exec swayidle -w timeout 0 ''
+# Idle configuration disabled (not needed for headless streaming)
 
-# Include additional config if present
-include /etc/sway/config.d/*
+# Don't include system config (may have unwanted defaults)
+# include /etc/sway/config.d/*
 

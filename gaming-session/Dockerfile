@@ -4,7 +4,7 @@
 # Build: docker build -t ghcr.io/cmmmota/gaming-session:latest .
 # Push:  docker push ghcr.io/cmmmota/gaming-session:latest
 
-FROM archlinux:base-devel
+FROM archlinux:base-devel@sha256:9414f5b766a34ebd769608b9ec80e1b4bfd7ea5e86dd49cae06ae308ad6c4221
 
 LABEL maintainer="cmmmota"
 LABEL description="Headless Wayland gaming environment with Steam and Gamescope for RDNA4"
@@ -32,7 +32,7 @@ RUN pacman -Syu --noconfirm && \
     gamescope mangohud gamemode lib32-gamemode \
     steam \
     ttf-liberation ttf-dejavu noto-fonts \
-    libxkbcommon libinput \
+    libxkbcommon libinput dbus \
     kubectl && \
     pacman -Scc --noconfirm
 
@@ -65,6 +65,7 @@ WORKDIR /home/gamer
 # Environment for Wayland headless
 ENV WLR_BACKENDS=headless
 ENV WLR_LIBINPUT_NO_DEVICES=1
+ENV WLR_RENDERER_ALLOW_SOFTWARE=1
 ENV XDG_RUNTIME_DIR=/xdg
 ENV XDG_SESSION_TYPE=wayland
 ENV WAYLAND_DISPLAY=wayland-0

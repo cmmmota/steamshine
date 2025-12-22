@@ -4,48 +4,29 @@
 # Build: docker build -t ghcr.io/cmmmota/sunshine-server:latest .
 # Push:  docker push ghcr.io/cmmmota/sunshine-server:latest
 
-FROM archlinux:base-devel
+FROM archlinux:base@sha256:69a7520c58d27f1b2ee52dd61f6496e632582616b89c7952865f56b44617772b
 
 LABEL maintainer="cmmmota"
 LABEL description="Sunshine game streaming server with kubectl for session management"
 
-# Configure pacman for parallel downloads
-RUN sed -i 's/#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
+# Configure pacman for parallel downloads and add LizardByte repo
+RUN sed -i 's/#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf && \
+    echo -e '\n[lizardbyte]\nSigLevel = Optional\nServer = https://github.com/LizardByte/pacman-repo/releases/latest/download' >> /etc/pacman.conf
 
 # Update system and install dependencies
-# - Base utilities: git wget curl sudo bash
 # - Wayland client libraries (Sunshine needs to connect to Wayland)
 # - Graphics stack - Mesa with Vulkan and VA-API
-# - Encoding libraries: ffmpeg libpulse
-# - Build dependencies for Sunshine
+# - Encoding libraries
 # - kubectl for scaling gaming pods
+# - Sunshine from official LizardByte repo
 RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm --needed \
-    git wget curl sudo bash \
     wayland wayland-protocols \
     mesa vulkan-radeon vulkan-icd-loader libva-mesa-driver libvdpau \
     ffmpeg libpulse \
-    cmake ninja gcc clang boost boost-libs \
-    openssl avahi libevdev libcap miniupnpc libnotify \
-    kubectl && \
+    kubectl \
+    sunshine && \
     pacman -Scc --noconfirm
-
-# Install Sunshine
-# Option 1: From source (recommended for latest features)
-RUN git clone --recurse-submodules https://github.com/LizardByte/Sunshine.git /tmp/sunshine && \
-    cd /tmp/sunshine && \
-    mkdir build && cd build && \
-    cmake -G Ninja \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_INSTALL_PREFIX=/usr \
-        -DSUNSHINE_ENABLE_WAYLAND=ON \
-        -DSUNSHINE_ENABLE_X11=OFF \
-        -DSUNSHINE_ENABLE_DRM=ON \
-        -DSUNSHINE_ENABLE_CUDA=OFF \
-        .. && \
-    ninja && \
-    ninja install && \
-    rm -rf /tmp/sunshine
 
 # Create sunshine user
 RUN useradd -m -G audio,video,input -s /bin/bash sunshine && \
@@ -87,4 +68,3 @@ EXPOSE 47984/tcp 47989/tcp 47990/tcp 48010/tcp
 EXPOSE 47998/udp 47999/udp 48000/udp 48002/udp 48010/udp
 
 ENTRYPOINT ["/entrypoint.sh"]
-
