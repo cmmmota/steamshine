@@ -40,6 +40,7 @@ RUN pacman -Syu --noconfirm && \
     pipewire pipewire-pulse wireplumber \
     gamescope mangohud gamemode lib32-gamemode \
     steam \
+    lib32-vulkan-radeon lib32-libva-mesa-driver \
     ttf-liberation ttf-dejavu noto-fonts \
     libxkbcommon libinput dbus \
     kubectl && \
@@ -48,6 +49,9 @@ RUN pacman -Syu --noconfirm && \
 # Create gamer user for running Steam (Steam doesn't like running as root)
 RUN useradd -m -G audio,video,input -s /bin/bash gamer && \
     echo 'gamer ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+# Generate D-Bus machine-id (required by Steam runtime)
+RUN dbus-uuidgen > /etc/machine-id
 
 # Create XDG runtime directory structure
 RUN mkdir -p /xdg && \

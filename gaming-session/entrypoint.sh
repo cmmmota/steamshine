@@ -31,8 +31,9 @@ fi
 
 # Start D-Bus session bus
 echo "[entrypoint] Starting D-Bus session..."
-eval "$(dbus-launch --sh-syntax)" 2>/dev/null || true
+eval "$(dbus-launch --sh-syntax)"
 export DBUS_SESSION_BUS_ADDRESS
+echo "[entrypoint] D-Bus session bus: ${DBUS_SESSION_BUS_ADDRESS}"
 
 # Start PipeWire for audio (suppress non-critical warnings)
 echo "[entrypoint] Starting PipeWire..."
@@ -45,5 +46,9 @@ sleep 2
 
 # Start Sway in headless mode
 echo "[entrypoint] Starting Sway (headless)..."
+
+# Export DISPLAY for XWayland (Steam needs this for its UI)
+export DISPLAY=:0
+
 exec sway 2>&1
 
