@@ -20,7 +20,9 @@ fi
 if [ -e "/dev/dri/renderD128" ]; then
     echo "[entrypoint] GPU devices found in /dev/dri"
     ls -la /dev/dri/
-    export WLR_RENDERER=${WLR_RENDERER:-vulkan}
+    # Vulkan renderer appearing unstable with mesa-git/RDNA4 combination (Format XR24 error)
+    # Switching to GLES2 for compositor stability. Games can still use Vulkan.
+    export WLR_RENDERER=gles2
     echo "[entrypoint] Using ${WLR_RENDERER} renderer"
 else
     echo "[entrypoint] WARNING: No GPU render device found. Using software rendering."
