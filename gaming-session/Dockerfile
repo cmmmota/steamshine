@@ -34,7 +34,7 @@ RUN sed -i 's/#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf && \
 RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm --needed \
     git wget curl sudo bash \
-    sway wayland wayland-protocols xorg-xwayland \
+    sway swaybg wayland wayland-protocols xorg-xwayland \
     mesa-git vulkan-radeon libva-mesa-driver libvdpau \
     vulkan-tools vulkan-validation-layers \
     pipewire pipewire-pulse wireplumber \
