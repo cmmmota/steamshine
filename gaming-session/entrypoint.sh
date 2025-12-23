@@ -12,12 +12,16 @@ if [ ! -d "${XDG_RUNTIME_DIR}" ]; then
 fi
 
 # Check for GPU access
-if [ -d "/dev/dri" ] && [ -e "/dev/dri/renderD128" ]; then
+if [ -d "/dev/dri" ]; then
+    echo "[entrypoint] Fixing /dev/dri permissions..."
+    sudo chmod 666 /dev/dri/* || true
+fi
+
+if [ -e "/dev/dri/renderD128" ]; then
     echo "[entrypoint] GPU devices found in /dev/dri"
     ls -la /dev/dri/
-    # Use Vulkan renderer by default, but allow override for GPU compatibility
-export WLR_RENDERER=${WLR_RENDERER:-vulkan}
-echo "[entrypoint] Using ${WLR_RENDERER} renderer"
+    export WLR_RENDERER=${WLR_RENDERER:-vulkan}
+    echo "[entrypoint] Using ${WLR_RENDERER} renderer"
 else
     echo "[entrypoint] WARNING: No GPU render device found. Using software rendering."
     export WLR_RENDERER=pixman

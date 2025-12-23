@@ -9,9 +9,16 @@ FROM archlinux:base@sha256:69a7520c58d27f1b2ee52dd61f6496e632582616b89c7952865f5
 LABEL maintainer="cmmmota"
 LABEL description="Sunshine game streaming server with kubectl for session management"
 
-# Configure pacman for parallel downloads and add LizardByte repo
+# Configure pacman for parallel downloads, add LizardByte repo, and install CachyOS repos
 RUN sed -i 's/#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf && \
-    echo -e '\n[lizardbyte]\nSigLevel = Optional\nServer = https://github.com/LizardByte/pacman-repo/releases/latest/download' >> /etc/pacman.conf
+    echo -e '\n[lizardbyte]\nSigLevel = Optional\nServer = https://github.com/LizardByte/pacman-repo/releases/latest/download' >> /etc/pacman.conf && \
+    pacman-key --init && \
+    pacman -Sy --noconfirm wget && \
+    wget https://mirror.cachyos.org/cachyos-repo.tar.xz && \
+    tar xvf cachyos-repo.tar.xz && \
+    cd cachyos-repo && \
+    yes | ./cachyos-repo.sh --install && \
+    cd .. && rm -rf cachyos-repo cachyos-repo.tar.xz
 
 # Update system and install dependencies
 # - Wayland client libraries (Sunshine needs to connect to Wayland)
@@ -22,7 +29,7 @@ RUN sed -i 's/#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf && \
 RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm --needed \
     wayland wayland-protocols \
-    mesa vulkan-radeon vulkan-icd-loader libva-mesa-driver libvdpau \
+    mesa-git vulkan-radeon libva-mesa-driver libvdpau \
     ffmpeg libpulse \
     kubectl \
     sunshine && \

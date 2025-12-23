@@ -9,8 +9,16 @@ FROM archlinux:base-devel@sha256:9414f5b766a34ebd769608b9ec80e1b4bfd7ea5e86dd49c
 LABEL maintainer="cmmmota"
 LABEL description="Headless Wayland gaming environment with Steam and Gamescope for RDNA4"
 
-# Configure pacman for parallel downloads and enable multilib
+# Configure pacman and install CachyOS repositories via official script
 RUN sed -i 's/#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf && \
+    pacman-key --init && \
+    pacman -Sy --noconfirm wget && \
+    wget https://mirror.cachyos.org/cachyos-repo.tar.xz && \
+    tar xvf cachyos-repo.tar.xz && \
+    cd cachyos-repo && \
+    yes | ./cachyos-repo.sh --install && \
+    cd .. && rm -rf cachyos-repo cachyos-repo.tar.xz && \
+    # Ensure multilib is enabled (script might handle it, but being safe)
     echo -e '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist' >> /etc/pacman.conf
 
 # Update system and install base dependencies
@@ -27,7 +35,7 @@ RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm --needed \
     git wget curl sudo bash \
     sway wayland wayland-protocols xorg-xwayland \
-    mesa vulkan-radeon vulkan-icd-loader libva-mesa-driver libvdpau \
+    mesa-git vulkan-radeon libva-mesa-driver libvdpau \
     pipewire pipewire-pulse wireplumber \
     gamescope mangohud gamemode lib32-gamemode \
     steam \
