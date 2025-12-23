@@ -13,8 +13,11 @@ bar {
     tray_output none
 }
 
-# Explicitly disable swaybg
-swaybg_command -
+# Enable background (Deep Blue) to verify video stream
+output * bg #000080 solid_color
+
+# Start Steam in Big Picture Mode
+exec steam -bigpicture
 
 # Start with a terminal for debugging (optional)
 # exec foot
