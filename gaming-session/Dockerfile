@@ -36,6 +36,7 @@ RUN pacman -Syu --noconfirm && \
     git wget curl sudo bash \
     sway wayland wayland-protocols xorg-xwayland \
     mesa-git vulkan-radeon libva-mesa-driver libvdpau \
+    vulkan-tools vulkan-validation-layers \
     pipewire pipewire-pulse wireplumber \
     gamescope mangohud gamemode lib32-gamemode \
     steam \
