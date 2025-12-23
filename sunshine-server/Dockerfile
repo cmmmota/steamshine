@@ -4,7 +4,7 @@
 # Build: docker build -t ghcr.io/cmmmota/sunshine-server:latest .
 # Push:  docker push ghcr.io/cmmmota/sunshine-server:latest
 
-FROM archlinux:base@sha256:69a7520c58d27f1b2ee52dd61f6496e632582616b89c7952865f56b44617772b
+FROM archlinux:base@sha256:6de1a7bfb793f8d9e24a7d573234f60d011d16db546de5bd777b75707fd4aff4
 
 LABEL maintainer="cmmmota"
 LABEL description="Sunshine game streaming server with kubectl for session management"
