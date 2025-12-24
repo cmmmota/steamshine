@@ -4,7 +4,7 @@
 # Build: docker build -t ghcr.io/cmmmota/gaming-session:latest .
 # Push:  docker push ghcr.io/cmmmota/gaming-session:latest
 
-FROM archlinux:base-devel@sha256:9414f5b766a34ebd769608b9ec80e1b4bfd7ea5e86dd49cae06ae308ad6c4221
+FROM archlinux:base-devel@sha256:0a03ad573989e8df9d62ac9d52600a6fb0778016bf5990716a19063e05ebe3c3
 
 LABEL maintainer="cmmmota"
 LABEL description="Headless Wayland gaming environment with Steam and Gamescope for RDNA4"
