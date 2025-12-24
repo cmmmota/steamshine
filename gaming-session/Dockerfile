@@ -37,23 +37,26 @@ RUN sed -i 's/#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf && \
 # - Runtime libraries
 # - kubectl for debugging
 RUN pacman -Syu --noconfirm && \
-    pacman -S --noconfirm --needed \
+    yes | pacman -S --noconfirm --needed \
     git wget curl sudo bash \
     sway swaybg wayland wayland-protocols xorg-xwayland \
     foot wofi pciutils \
-    mesa-git vulkan-radeon libva-mesa-driver libvdpau \
+    cachyos-v3/mesa-git vulkan-radeon libva-mesa-driver libvdpau \
     vulkan-tools vulkan-validation-layers \
     pipewire pipewire-pulse wireplumber \
     gamescope mangohud gamemode lib32-gamemode \
     steam \
-    lib32-vulkan-radeon lib32-libva-mesa-driver \
+    cachyos-v3/lib32-mesa-git lib32-vulkan-radeon lib32-libva-mesa-driver \
+    lib32-libnm lib32-nss lib32-libxcrypt-compat lib32-libcurl-gnutls \
+    lib32-libpulse lib32-alsa-plugins \
+    lib32-glib2 lib32-dbus lib32-libxtst \
     ttf-liberation ttf-dejavu noto-fonts \
     libxkbcommon libinput dbus \
     kubectl && \
     pacman -Scc --noconfirm
 
 # Create gamer user for running Steam (Steam doesn't like running as root)
-RUN useradd -m -G audio,video,input -s /bin/bash gamer && \
+RUN useradd -m -G audio,video,input,render -s /bin/bash gamer && \
     echo 'gamer ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 # Generate D-Bus machine-id (required by Steam runtime)
@@ -77,7 +80,9 @@ RUN chown -R gamer:gamer /home/gamer/.config
 # Entrypoint and Session scripts
 COPY entrypoint.sh /entrypoint.sh
 COPY session.sh /session.sh
-RUN chmod +x /entrypoint.sh /session.sh
+COPY steam-wrapper.sh /home/gamer/steam-wrapper.sh
+RUN chmod +x /entrypoint.sh /session.sh /home/gamer/steam-wrapper.sh && \
+    chown gamer:gamer /home/gamer/steam-wrapper.sh
 
 USER gamer
 WORKDIR /home/gamer

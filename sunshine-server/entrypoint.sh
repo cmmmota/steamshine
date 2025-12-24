@@ -5,9 +5,12 @@ echo "[sunshine] Starting Sunshine streaming server..."
 echo "[sunshine] XDG_RUNTIME_DIR: ${XDG_RUNTIME_DIR}"
 echo "[sunshine] WAYLAND_DISPLAY: ${WAYLAND_DISPLAY}"
 
-# Ensure XDG_RUNTIME_DIR permissions (important if shared volume)
-sudo chown sunshine:sunshine "${XDG_RUNTIME_DIR}"
-chmod 0700 "${XDG_RUNTIME_DIR}"
+# Ensure XDG_RUNTIME_DIR is writable
+if [ ! -w "${XDG_RUNTIME_DIR}" ]; then
+    echo "[sunshine] WARNING: ${XDG_RUNTIME_DIR} is not writable. Attempting to fix..."
+    sudo chown sunshine:sunshine "${XDG_RUNTIME_DIR}"
+    chmod 0700 "${XDG_RUNTIME_DIR}"
+fi
 
 # Check if apps.json is mounted
 if [ -f /config/apps.json ]; then
@@ -16,12 +19,21 @@ if [ -f /config/apps.json ]; then
     cp /config/apps.json /home/sunshine/.config/sunshine/apps.json
 fi
 
-# Wait for Wayland socket if gaming session is already running
-SOCKET_PATH="${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}"
-if [ -S "${SOCKET_PATH}" ]; then
-    echo "[sunshine] Wayland socket found at ${SOCKET_PATH}"
-else
-    echo "[sunshine] WARNING: No Wayland socket found. Games will need to start the gaming session first."
+# 2. Wait for a Wayland socket to appear (up to 60s)
+echo "[sunshine] Waiting for Wayland socket in ${XDG_RUNTIME_DIR}..."
+for i in {1..120}; do
+    # Find the first wayland-* socket
+    FOUND_SOCKET=$(ls ${XDG_RUNTIME_DIR}/wayland-* 2>/dev/null | grep -v "\.lock" | head -n 1)
+    if [ -n "${FOUND_SOCKET}" ]; then
+        export WAYLAND_DISPLAY=$(basename "${FOUND_SOCKET}")
+        echo "[sunshine] Found Wayland display: ${WAYLAND_DISPLAY}"
+        break
+    fi
+    sleep 0.5
+done
+
+if [ -z "${WAYLAND_DISPLAY}" ]; then
+    echo "[sunshine] ERROR: Timed out waiting for Wayland socket. Sunshine will likely fail."
 fi
 
 # Start Sunshine

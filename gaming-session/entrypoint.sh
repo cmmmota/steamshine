@@ -4,14 +4,13 @@ echo "[entrypoint] Starting gaming session..."
 echo "[entrypoint] XDG_RUNTIME_DIR: ${XDG_RUNTIME_DIR}"
 echo "[entrypoint] WAYLAND_DISPLAY: ${WAYLAND_DISPLAY}"
 
-# Ensure XDG_RUNTIME_DIR exists (permissions set in Dockerfile)
-if [ ! -d "${XDG_RUNTIME_DIR}" ]; then
-    echo "[entrypoint] Creating XDG_RUNTIME_DIR..."
+# Ensure XDG_RUNTIME_DIR is writable
+if [ ! -w "${XDG_RUNTIME_DIR}" ]; then
+    echo "[entrypoint] Fixing XDG_RUNTIME_DIR permissions..."
     sudo mkdir -p "${XDG_RUNTIME_DIR}"
+    sudo chown gamer:gamer "${XDG_RUNTIME_DIR}"
+    chmod 0700 "${XDG_RUNTIME_DIR}"
 fi
-echo "[entrypoint] Ensuring XDG_RUNTIME_DIR permissions..."
-sudo chown gamer:gamer "${XDG_RUNTIME_DIR}"
-chmod 0700 "${XDG_RUNTIME_DIR}"
 
 # Check for GPU access
 if [ -d "/dev/dri" ]; then
@@ -19,9 +18,18 @@ if [ -d "/dev/dri" ]; then
     sudo chmod 666 /dev/dri/* || true
 fi
 
+# 2. Setup D-Bus system directory for Steam's WebHelper (needs /run/dbus/system_bus_socket)
+echo "[entrypoint] Setting up System D-Bus directory..."
+sudo mkdir -p /run/dbus
+sudo chown gamer:gamer /run/dbus
+
 if [ -e "/dev/dri/renderD128" ]; then
     echo "[entrypoint] GPU devices found in /dev/dri"
     ls -la /dev/dri/
+    # Vulkan renderer is unstable for Sway with mesa-git/RDNA4 (Format XR24 error)
+    # Using GLES2 for the compositor. Games will still use Vulkan/RADV.
+    export WLR_RENDERER=gles2
+    echo "[entrypoint] Using ${WLR_RENDERER} renderer for Sway"
 else
     echo "[entrypoint] WARNING: No GPU render device found. Gamescope might fail."
 fi

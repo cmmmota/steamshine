@@ -12,11 +12,11 @@ bar {
 # Blue background to verify stream capture is working
 output * bg #000080 solid_color
 
-# Start Steam inside Gamescope
-# Gamescope provides the "Steam Deck" environment that Steam Big Picture prefers.
-# Sunshine captures the whole Sway "desktop".
-# HDR is enabled if STREAM_HDR is true
-exec gamescope -W __WIDTH__ -H __HEIGHT__ -r __REFRESH__ -f __HDR_ARGS__ -- steam -bigpicture
+# Start Steam inside Gamescope via wrapper for logging
+# -f: Fullscreen
+# --xwayland-count 1: Pre-initialize XWayland
+# We unset WLR_BACKENDS and WLR_RENDERER to ensure gamescope nests inside Sway
+exec env -u WLR_BACKENDS -u WLR_RENDERER gamescope --expose-wayland --xwayland-count 1 -W __WIDTH__ -H __HEIGHT__ -r __REFRESH__ -f __HDR_ARGS__ -- /home/gamer/steam-wrapper.sh
 
 # Key bindings
 bindsym Mod4+Return exec foot
