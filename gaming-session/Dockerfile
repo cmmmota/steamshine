@@ -9,6 +9,8 @@ FROM archlinux:base-devel@sha256:9414f5b766a34ebd769608b9ec80e1b4bfd7ea5e86dd49c
 LABEL maintainer="cmmmota"
 LABEL description="Headless Wayland gaming environment with Steam and Gamescope for RDNA4"
 
+ENV LANG=en_US.UTF-8
+
 # Configure pacman and install CachyOS repositories via official script
 RUN sed -i 's/#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf && \
     pacman-key --init && \
@@ -19,7 +21,10 @@ RUN sed -i 's/#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf && \
     yes | ./cachyos-repo.sh --install && \
     cd .. && rm -rf cachyos-repo cachyos-repo.tar.xz && \
     # Ensure multilib is enabled (script might handle it, but being safe)
-    echo -e '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist' >> /etc/pacman.conf
+    echo -e '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist' >> /etc/pacman.conf && \
+    # Generate locale
+    sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+    locale-gen
 
 # Update system and install base dependencies
 # - Base utilities: git wget curl sudo bash
@@ -35,6 +40,7 @@ RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm --needed \
     git wget curl sudo bash \
     sway swaybg wayland wayland-protocols xorg-xwayland \
+    foot wofi pciutils \
     mesa-git vulkan-radeon libva-mesa-driver libvdpau \
     vulkan-tools vulkan-validation-layers \
     pipewire pipewire-pulse wireplumber \

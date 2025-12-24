@@ -29,26 +29,22 @@ else
     export WLR_RENDERER=pixman
 fi
 
-# Start D-Bus session bus
-echo "[entrypoint] Starting D-Bus session..."
-eval "$(dbus-launch --sh-syntax)"
-export DBUS_SESSION_BUS_ADDRESS
-echo "[entrypoint] D-Bus session bus: ${DBUS_SESSION_BUS_ADDRESS}"
-
-# Start PipeWire for audio (suppress non-critical warnings)
-echo "[entrypoint] Starting PipeWire..."
-pipewire 2>&1 | grep -v "RTKit\|system bus" &
-sleep 1
-pipewire-pulse 2>&1 | grep -v "RTKit\|system bus" &
-sleep 1
-wireplumber 2>&1 | grep -v "system-dbus\|modem-manager\|voice-call\|libcamera" &
-sleep 2
-
-# Start Sway in headless mode
-echo "[entrypoint] Starting Sway (headless)..."
-
 # Export DISPLAY for XWayland (Steam needs this for its UI)
 export DISPLAY=:0
 
-exec sway 2>&1
+# Start everything within a D-Bus session
+echo "[entrypoint] Starting session with dbus-run-session..."
+exec dbus-run-session -- /bin/bash -c "
+    # Start PipeWire for audio (suppress non-critical warnings)
+    echo \"[session] Starting PipeWire...\"
+    pipewire 2>&1 | grep -v \"RTKit\\|system bus\" &
+    sleep 1
+    pipewire-pulse 2>&1 | grep -v \"RTKit\\|system bus\" &
+    sleep 1
+    wireplumber 2>&1 | grep -v \"system-dbus\\|modem-manager\\ voice-call\\|libcamera\" &
+    sleep 2
+
+    echo \"[session] Starting Sway (headless)...\"
+    exec sway 2>&1
+"
 
