@@ -17,7 +17,7 @@ bar {
 output * bg #000080 solid_color
 
 # Start Steam in Big Picture Mode
-exec steam -bigpicture
+exec bash -c "source /tmp/dbus-session.env && steam -bigpicture"
 
 # Start with a terminal for debugging (optional)
 # exec foot

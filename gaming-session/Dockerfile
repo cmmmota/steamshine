@@ -70,13 +70,10 @@ RUN mkdir -p /home/gamer/.local/share/Steam && \
     mkdir -p /home/gamer/.cache && \
     chown -R gamer:gamer /home/gamer
 
-# Sway configuration for headless operation
-COPY sway-config /home/gamer/.config/sway/config
-RUN chown -R gamer:gamer /home/gamer/.config
-
-# Entrypoint script
+# Entrypoint and Session scripts
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY session.sh /session.sh
+RUN chmod +x /entrypoint.sh /session.sh
 
 USER gamer
 WORKDIR /home/gamer

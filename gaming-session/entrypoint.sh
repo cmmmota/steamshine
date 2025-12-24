@@ -20,31 +20,14 @@ fi
 if [ -e "/dev/dri/renderD128" ]; then
     echo "[entrypoint] GPU devices found in /dev/dri"
     ls -la /dev/dri/
-    # Vulkan renderer appearing unstable with mesa-git/RDNA4 combination (Format XR24 error)
-    # Switching to GLES2 for compositor stability. Games can still use Vulkan.
-    export WLR_RENDERER=gles2
-    echo "[entrypoint] Using ${WLR_RENDERER} renderer"
 else
-    echo "[entrypoint] WARNING: No GPU render device found. Using software rendering."
-    export WLR_RENDERER=pixman
+    echo "[entrypoint] WARNING: No GPU render device found. Gamescope might fail."
 fi
 
 # Export DISPLAY for XWayland (Steam needs this for its UI)
 export DISPLAY=:0
 
-# Start everything within a D-Bus session
-echo "[entrypoint] Starting session with dbus-run-session..."
-exec dbus-run-session -- /bin/bash -c "
-    # Start PipeWire for audio (suppress non-critical warnings)
-    echo \"[session] Starting PipeWire...\"
-    pipewire 2>&1 | grep -v \"RTKit\\|system bus\" &
-    sleep 1
-    pipewire-pulse 2>&1 | grep -v \"RTKit\\|system bus\" &
-    sleep 1
-    wireplumber 2>&1 | grep -v \"system-dbus\\|modem-manager\\ voice-call\\|libcamera\" &
-    sleep 2
-
-    echo \"[session] Starting Sway (headless)...\"
-    exec sway 2>&1
-"
+# Start everything within a D-Bus session using the dedicated session script
+echo "[entrypoint] Launching session via dbus-run-session..."
+exec dbus-run-session -- /session.sh
 
