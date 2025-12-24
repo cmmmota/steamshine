@@ -5,6 +5,10 @@ echo "[sunshine] Starting Sunshine streaming server..."
 echo "[sunshine] XDG_RUNTIME_DIR: ${XDG_RUNTIME_DIR}"
 echo "[sunshine] WAYLAND_DISPLAY: ${WAYLAND_DISPLAY}"
 
+# Ensure XDG_RUNTIME_DIR permissions (important if shared volume)
+sudo chown sunshine:sunshine "${XDG_RUNTIME_DIR}"
+chmod 0700 "${XDG_RUNTIME_DIR}"
+
 # Check if apps.json is mounted
 if [ -f /config/apps.json ]; then
     echo "[sunshine] Found custom apps.json configuration"

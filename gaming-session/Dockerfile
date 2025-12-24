@@ -70,6 +70,10 @@ RUN mkdir -p /home/gamer/.local/share/Steam && \
     mkdir -p /home/gamer/.cache && \
     chown -R gamer:gamer /home/gamer
 
+# Sway configuration for headless operation
+COPY sway-config /home/gamer/.config/sway/config
+RUN chown -R gamer:gamer /home/gamer/.config
+
 # Entrypoint and Session scripts
 COPY entrypoint.sh /entrypoint.sh
 COPY session.sh /session.sh
@@ -95,6 +99,12 @@ ENV LIBVA_DRIVER_NAME=radeonsi
 
 # Steam environment
 ENV STEAM_DISABLE_HW_SURVEY=1
+
+# Streaming defaults
+ENV STREAM_WIDTH=1920
+ENV STREAM_HEIGHT=1080
+ENV STREAM_REFRESH=60
+ENV STREAM_HDR=false
 
 ENTRYPOINT ["/entrypoint.sh"]
 

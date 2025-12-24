@@ -1,68 +1,29 @@
 # Sway headless configuration for game streaming
-# This creates a virtual display that Sunshine can capture
-
-# Set headless output
 output HEADLESS-1 {
-    mode 1920x1080@60Hz
+    mode __WIDTH__x__HEIGHT__@__REFRESH__Hz
     scale 1
 }
 
-# Disable default bar completely (not needed for streaming)
 bar {
     mode invisible
     tray_output none
 }
 
-# Enable background (Deep Blue) to verify video stream
+# Blue background to verify stream capture is working
 output * bg #000080 solid_color
 
-# Start Steam in Big Picture Mode
-exec bash -c "source /tmp/dbus-session.env && steam -bigpicture"
+# Start Steam inside Gamescope
+# Gamescope provides the "Steam Deck" environment that Steam Big Picture prefers.
+# Sunshine captures the whole Sway "desktop".
+# HDR is enabled if STREAM_HDR is true
+exec gamescope -W __WIDTH__ -H __HEIGHT__ -r __REFRESH__ -f __HDR_ARGS__ -- steam -bigpicture
 
-# Start with a terminal for debugging (optional)
-# exec foot
-
-# Key bindings for development/debugging
+# Key bindings
 bindsym Mod4+Return exec foot
-bindsym Mod4+d exec wofi --show drun
 bindsym Mod4+Shift+q kill
 bindsym Mod4+Shift+e exit
 
-# Focus and movement
-bindsym Mod4+Left focus left
-bindsym Mod4+Down focus down
-bindsym Mod4+Up focus up
-bindsym Mod4+Right focus right
-
-bindsym Mod4+Shift+Left move left
-bindsym Mod4+Shift+Down move down
-bindsym Mod4+Shift+Up move up
-bindsym Mod4+Shift+Right move right
-
-# Fullscreen toggle
-bindsym Mod4+f fullscreen toggle
-
-# Floating toggle
-bindsym Mod4+Shift+space floating toggle
-
-# Workspace bindings (1-10)
-bindsym Mod4+1 workspace number 1
-bindsym Mod4+2 workspace number 2
-bindsym Mod4+3 workspace number 3
-bindsym Mod4+4 workspace number 4
-
-bindsym Mod4+Shift+1 move container to workspace number 1
-bindsym Mod4+Shift+2 move container to workspace number 2
-bindsym Mod4+Shift+3 move container to workspace number 3
-bindsym Mod4+Shift+4 move container to workspace number 4
-
-# Input configuration - accept input from Sunshine's virtual devices
+# Input configuration
 input * {
     accel_profile flat
 }
-
-# Idle configuration disabled (not needed for headless streaming)
-
-# Don't include system config (may have unwanted defaults)
-# include /etc/sway/config.d/*
-

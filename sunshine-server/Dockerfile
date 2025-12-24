@@ -31,7 +31,7 @@ RUN pacman -Syu --noconfirm && \
     wayland wayland-protocols \
     mesa-git vulkan-radeon libva-mesa-driver libvdpau \
     ffmpeg libpulse \
-    kubectl \
+    kubectl sudo \
     sunshine && \
     pacman -Scc --noconfirm
 
@@ -63,6 +63,12 @@ WORKDIR /home/sunshine
 # Wayland environment
 ENV XDG_RUNTIME_DIR=/xdg
 ENV WAYLAND_DISPLAY=wayland-0
+
+# Streaming defaults (for consistency)
+ENV STREAM_WIDTH=1920
+ENV STREAM_HEIGHT=1080
+ENV STREAM_REFRESH=60
+ENV STREAM_HDR=false
 
 # AMD GPU environment
 ENV AMD_VULKAN_ICD=RADV
