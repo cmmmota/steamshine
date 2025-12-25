@@ -26,9 +26,13 @@ sudo chown gamer:gamer /run/dbus
 if [ -e "/dev/dri/renderD128" ]; then
     echo "[entrypoint] GPU devices found in /dev/dri"
     ls -la /dev/dri/
+    # Enable DRM device support even for headless backend (helps with DMABUF sharing)
+    export WLR_DRM_DEVICES=/dev/dri/card0
+
+    # Set Wayland renderer (remove gles2 force to allow Vulkan/Auto)
     # Vulkan renderer is unstable for Sway with mesa-git/RDNA4 (Format XR24 error)
     # Using GLES2 for the compositor. Games will still use Vulkan/RADV.
-    export WLR_RENDERER=gles2
+    # export WLR_RENDERER=gles2
     echo "[entrypoint] Using ${WLR_RENDERER} renderer for Sway"
 else
     echo "[entrypoint] WARNING: No GPU render device found. Gamescope might fail."
