@@ -33,10 +33,29 @@ sleep 1
 wireplumber 2>&1 | grep -v "system-dbus\|modem-manager\|voice-call\|libcamera" &
 sleep 2
 
+# Start seatd as the gamer user (requires sudo if not in group yet)
+sudo seatd -g seat &
+export LIBSEAT_BACKEND=seatd
+export SEATD_SOCK=/run/seatd.sock
+sleep 1 # Give seatd a moment to initialize
+
 # Start Sway in background to capture its display name
 echo "[session] Starting Sway..."
-sway -c /tmp/sway-config.actual > /tmp/sway.log 2>&1 &
+WLR_BACKENDS=headless,libinput sway -c /tmp/sway-config.actual > /tmp/sway.log 2>&1 &
 SWAY_PID=$!
+
+# 3. Wait for the socket to appear and export it
+echo "[session] Waiting for Sway socket..."
+for i in {1..10}; do
+    # Sway typically puts the socket in XDG_RUNTIME_DIR/sway-ipc.<uid>.<pid>.sock
+    SWAY_SOCKET_FILE=$(ls ${XDG_RUNTIME_DIR}/sway-ipc.*.sock 2>/dev/null | head -n 1)
+    if [ -S "$SWAY_SOCKET_FILE" ]; then
+        export SWAYSOCK=$SWAY_SOCKET_FILE
+        echo "[session] SWAYSOCK set to $SWAYSOCK"
+        break
+    fi
+    sleep 0.5
+done
 
 echo "[session] Waiting for Sway to initialize Wayland socket..."
 for i in {1..20}; do

@@ -4,6 +4,12 @@ output HEADLESS-1 {
     scale 1
 }
 
+# Force sway to treat ALL discovered inputs as part of this session
+seat seat0 {
+    attach *
+    fallback true
+}
+
 bar {
     mode invisible
     tray_output none
@@ -12,8 +18,11 @@ bar {
 # Blue background to verify stream capture is working
 output * bg #000080 solid_color
 
+# Just start a terminal so we have a window to hover over
+exec foot
+
 # Start Steam inside Gamescope via wrapper for logging
-exec sleep 2 && env -u WLR_BACKENDS -u WLR_RENDERER gamescope --expose-wayland --force-grab-cursor --xwayland-count 1 -W __WIDTH__ -H __HEIGHT__ -r __REFRESH__ -f __HDR_ARGS__ -- /home/gamer/steam-wrapper.sh
+#exec sleep 2 && env -u WLR_BACKENDS -u WLR_RENDERER gamescope --expose-wayland -W __WIDTH__ -H __HEIGHT__ -r __REFRESH__ -f __HDR_ARGS__ -- /home/gamer/steam-wrapper.sh
 
 # Key bindings
 bindsym Mod4+Return exec foot
@@ -22,5 +31,9 @@ bindsym Mod4+Shift+e exit
 
 # Input configuration
 input * {
+    events enabled
+    tap enabled
+    dwt disabled
+    pointer_accel 0
     accel_profile flat
 }

@@ -51,7 +51,7 @@ RUN pacman -Syu --noconfirm && \
     lib32-libpulse lib32-alsa-plugins \
     lib32-glib2 lib32-dbus lib32-libxtst \
     ttf-liberation ttf-dejavu noto-fonts \
-    libxkbcommon libinput dbus \
+    libxkbcommon libinput libinput-tools dbus seatd \
     kubectl && \
     pacman -Scc --noconfirm
 
@@ -85,11 +85,13 @@ COPY minimal-dbus-system.conf /etc/dbus-1/minimal-system.conf
 RUN chmod +x /entrypoint.sh /session.sh /home/gamer/steam-wrapper.sh && \
     chown gamer:gamer /home/gamer/steam-wrapper.sh
 
+RUN usermod -a -G seat gamer
+
 USER gamer
 WORKDIR /home/gamer
 
 # Environment for Wayland headless
-ENV WLR_BACKENDS=headless
+ENV WLR_BACKENDS=headless,libinput
 ENV WLR_RENDERER_ALLOW_SOFTWARE=1
 ENV XDG_RUNTIME_DIR=/xdg
 ENV XDG_SESSION_TYPE=wayland

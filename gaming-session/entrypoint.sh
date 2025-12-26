@@ -9,7 +9,7 @@ if [ ! -w "${XDG_RUNTIME_DIR}" ]; then
     echo "[entrypoint] Fixing XDG_RUNTIME_DIR permissions..."
     sudo mkdir -p "${XDG_RUNTIME_DIR}"
     sudo chown gamer:gamer "${XDG_RUNTIME_DIR}"
-    chmod 0700 "${XDG_RUNTIME_DIR}"
+    sudo chmod 0700 "${XDG_RUNTIME_DIR}"
 fi
 
 # Check for GPU access
