@@ -32,6 +32,7 @@ for i in {1..120}; do
     sleep 0.5
 done
 
+# Check if WAYLAND_DISPLAY is set
 if [ -z "${WAYLAND_DISPLAY}" ]; then
     echo "[sunshine] ERROR: Timed out waiting for Wayland socket. Sunshine will likely fail."
 fi
@@ -39,4 +40,3 @@ fi
 # Start Sunshine
 echo "[sunshine] Launching Sunshine..."
 exec sunshine /home/sunshine/.config/sunshine/sunshine.conf
-

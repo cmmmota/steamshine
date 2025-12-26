@@ -4,7 +4,7 @@
 # Build: docker build -t ghcr.io/cmmmota/sunshine-server:latest .
 # Push:  docker push ghcr.io/cmmmota/sunshine-server:latest
 
-FROM archlinux:base@sha256:6de1a7bfb793f8d9e24a7d573234f60d011d16db546de5bd777b75707fd4aff4
+FROM archlinux/archlinux:base-20251226.0.475015
 
 LABEL maintainer="cmmmota"
 LABEL description="Sunshine game streaming server with kubectl for session management"
@@ -81,3 +81,4 @@ EXPOSE 47984/tcp 47989/tcp 47990/tcp 48010/tcp
 EXPOSE 47998/udp 47999/udp 48000/udp 48002/udp 48010/udp
 
 ENTRYPOINT ["/entrypoint.sh"]
+

@@ -13,10 +13,7 @@ bar {
 output * bg #000080 solid_color
 
 # Start Steam inside Gamescope via wrapper for logging
-# exec sleep 2 && env -u WLR_BACKENDS -u WLR_RENDERER gamescope --expose-wayland --xwayland-count 1 -W __WIDTH__ -H __HEIGHT__ -r __REFRESH__ -f __HDR_ARGS__ -- /home/gamer/steam-wrapper.sh
-
-# Smoke test: Run vkcube directly in Sway
-exec vkcube
+exec sleep 2 && env -u WLR_BACKENDS -u WLR_RENDERER gamescope --expose-wayland --force-grab-cursor --xwayland-count 1 -W __WIDTH__ -H __HEIGHT__ -r __REFRESH__ -f __HDR_ARGS__ -- /home/gamer/steam-wrapper.sh
 
 # Key bindings
 bindsym Mod4+Return exec foot
