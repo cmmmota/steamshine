@@ -2,12 +2,12 @@
 # Dedicated session script for Sway + Gamescope
 
 echo "[session] Cleaning up XDG_RUNTIME_DIR: ${XDG_RUNTIME_DIR}"
-# Clean up stale sockets from previous runs
+# Clean up ALL stale sockets from previous runs to avoid wayland-1/2/3 drift
 rm -f /xdg/wayland-* /xdg/wayland-*.lock
 rm -f /xdg/gamescope-* /xdg/gamescope-*.lock
 rm -f /xdg/sway-ipc.*.sock
 
-# Ensure we have a fresh start for the display name
+# Let Sway decide which display to take (it will pick the first available)
 unset WAYLAND_DISPLAY
 
 if [ -n "$DBUS_SESSION_BUS_ADDRESS" ]; then
@@ -17,8 +17,8 @@ fi
 
 # Start a minimal D-Bus "system" bus for Steam's WebHelper (CEF)
 # It expects the socket at /run/dbus/system_bus_socket
-echo "[session] Starting dummy System D-Bus..."
-dbus-daemon --config-file=/usr/share/dbus-1/system.conf --print-address --nofork --nopidfile --address=unix:path=/run/dbus/system_bus_socket &
+echo "[session] Starting dummy System D-Bus with minimal config..."
+dbus-daemon --config-file=/etc/dbus-1/minimal-system.conf --nofork --nopidfile &
 sleep 1
 
 # Force AMD RADV driver and prevent llvmpipe fallback
@@ -33,8 +33,22 @@ sleep 1
 wireplumber 2>&1 | grep -v "system-dbus\|modem-manager\|voice-call\|libcamera" &
 sleep 2
 
-# Start Sway
-# Sunshine will capture Sway's output.
-# Steam will run inside Gamescope, which runs inside Sway.
+# Start Sway in background to capture its display name
 echo "[session] Starting Sway..."
-exec sway -c /tmp/sway-config.actual 2>&1
+sway -c /tmp/sway-config.actual > /tmp/sway.log 2>&1 &
+SWAY_PID=$!
+
+echo "[session] Waiting for Sway to initialize Wayland socket..."
+for i in {1..20}; do
+    # Find the newest wayland socket
+    NEWEST_SOCKET=$(ls -t /xdg/wayland-* 2>/dev/null | grep -v "\.lock" | head -n 1)
+    if [ -n "$NEWEST_SOCKET" ]; then
+        export WAYLAND_DISPLAY=$(basename "$NEWEST_SOCKET")
+        echo "[session] Sway is running on ${WAYLAND_DISPLAY}"
+        break
+    fi
+    sleep 0.5
+done
+
+# Keep script alive as long as Sway is running
+wait $SWAY_PID

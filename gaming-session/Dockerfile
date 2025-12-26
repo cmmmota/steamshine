@@ -81,6 +81,7 @@ RUN chown -R gamer:gamer /home/gamer/.config
 COPY entrypoint.sh /entrypoint.sh
 COPY session.sh /session.sh
 COPY steam-wrapper.sh /home/gamer/steam-wrapper.sh
+COPY minimal-dbus-system.conf /etc/dbus-1/minimal-system.conf
 RUN chmod +x /entrypoint.sh /session.sh /home/gamer/steam-wrapper.sh && \
     chown gamer:gamer /home/gamer/steam-wrapper.sh
 
