@@ -4,14 +4,16 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'gaming-session/**'
-      - 'sunshine-server/**'
+      #- 'gaming-session/**'
+      #- 'sunshine-server/**'
+      - 'steamshine-rig/**'
       - '.github/workflows/docker-build.yml'
   pull_request:
     branches: [ main ]
     paths:
-      - 'gaming-session/**'
-      - 'sunshine-server/**'
+      #- 'gaming-session/**'
+      #- 'sunshine-server/**'
+      - 'steamshine-rig/**'
       - '.github/workflows/docker-build.yml'
 
 env:
@@ -28,10 +30,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image: gaming-session
-            context: ./gaming-session
-          - image: sunshine-server
-            context: ./sunshine-server
+          #- image: gaming-session
+          #- context: ./gaming-session
+          #- image: sunshine-server
+          #- context: ./sunshine-server
+          - image: steamshine-rig
+            context: ./steamshine-rig
 
     steps:
       - name: Checkout repository

@@ -1,0 +1,39 @@
+# Sway config for headless streaming
+# Minimal config focused on running Steam + Sunshine
+
+# Use Mod4 (Super/Windows key) as modifier
+set $mod Mod4
+
+# Enable XWayland (required for Steam and many games)
+xwayland enable
+
+# Resolution is set via swaymsg in entrypoint (env var expansion doesn't work in config)
+# Default fallback resolution
+output * {
+    mode __WIDTH__x__HEIGHT__@__REFRESH__Hz
+    scale 1
+}
+
+# Input configuration
+input * {
+    events enabled
+    tap enabled
+    dwt disabled
+    pointer_accel 0
+    accel_profile flat
+}
+# Disable all window decorations for fullscreen gaming
+default_border none
+default_floating_border none
+hide_edge_borders both
+
+# Focus follows mouse
+focus_follows_mouse yes
+
+# Allow Sunshine to grab input  
+seat seat0 xcursor_theme default 24
+
+# Basic keybindings (for debugging if needed)
+bindsym $mod+Return exec foot
+bindsym $mod+Shift+q kill
+bindsym $mod+Shift+e exit
