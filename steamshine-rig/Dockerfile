@@ -31,7 +31,7 @@ RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm --needed \
     base-devel \
     cachyos-v3/mesa-git vulkan-radeon libva-mesa-driver libvdpau \
-    sway swayidle swaybg foot \
+    hyprland foot \
     mangohud gamemode lib32-gamemode \
     sunshine \
     libinput libinput-tools libevdev evtest \
@@ -46,7 +46,10 @@ RUN pacman -Syu --noconfirm && \
     lib32-libpulse lib32-alsa-plugins \
     lib32-glib2 lib32-dbus lib32-libxtst \
     lib32-libx11 lib32-libxext lib32-libxrender lib32-libxinerama lib32-libxi \
+    python python-pip \
     && pacman -Scc --noconfirm
+# Install dumb-udev (replaces udevd in container for device discovery)
+RUN pip install --break-system-packages dumb-udev
 
 # 3. User Setup
 # Creating 'gamer' user. Sunshine will run as this user too.
@@ -56,7 +59,7 @@ RUN useradd -m -G audio,video,input,wheel,seat -s /bin/bash gamer && \
 # 4. Directories & Permissions
 RUN mkdir -p /xdg && chown gamer:gamer /xdg && chmod 0700 /xdg && \
     mkdir -p /home/gamer/.config/sunshine && \
-    mkdir -p /home/gamer/.config/sway && \
+    mkdir -p /home/gamer/.config/hypr && \
     mkdir -p /home/gamer/.local/state/wireplumber && \
     mkdir -p /home/gamer/.local/share/Steam && \
     mkdir -p /home/gamer/.steam && \
@@ -64,11 +67,11 @@ RUN mkdir -p /xdg && chown gamer:gamer /xdg && chmod 0700 /xdg && \
 
 # 5. Configuration Files
 COPY sunshine.conf /home/gamer/.config/sunshine/sunshine.conf
-COPY sway-config /home/gamer/.config/sway/config
+COPY hyprland-config /home/gamer/.config/hypr/hyprland.conf
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh && \
     chown gamer:gamer /home/gamer/.config/sunshine/sunshine.conf && \
-    chown gamer:gamer /home/gamer/.config/sway/config
+    chown gamer:gamer /home/gamer/.config/hypr/hyprland.conf
 
 # 6. Grant file capabilities for non-root operation
 # - sunshine: CAP_SYS_ADMIN for uinput device creation
