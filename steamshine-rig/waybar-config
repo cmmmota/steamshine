@@ -1,0 +1,33 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 30,
+    "modules-left": ["custom/steam"],
+    "modules-center": ["clock"],
+    "modules-right": ["cpu", "memory", "network"],
+    
+    "custom/steam": {
+        "format": " Steam",
+        "on-click": "steam -gamepadui -steamos3",
+        "tooltip": false
+    },
+    
+    "clock": {
+        "format": "{:%H:%M}",
+        "tooltip-format": "{:%Y-%m-%d}"
+    },
+    
+    "cpu": {
+        "format": " {usage}%"
+    },
+    
+    "memory": {
+        "format": " {}%"
+    },
+    
+    "network": {
+        "format-wifi": " {essid}",
+        "format-ethernet": " {ifname}",
+        "format-disconnected": "⚠ Disconnected"
+    }
+}

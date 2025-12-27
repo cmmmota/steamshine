@@ -1,0 +1,36 @@
+* {
+    border: none;
+    border-radius: 0;
+    font-family: "Inter", "Roboto", "Helvetica", Arial, sans-serif;
+    font-size: 13px;
+    min-height: 0;
+}
+
+window#waybar {
+    background: rgba(17, 17, 27, 0.8);
+    color: #cdd6f4;
+    border-bottom: 2px solid rgba(137, 180, 250, 0.3);
+}
+
+#custom-steam {
+    background: #1e1e2e;
+    color: #89b4fa;
+    padding: 0 10px;
+    margin: 4px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+#custom-steam:hover {
+    background: #89b4fa;
+    color: #1e1e2e;
+}
+
+#clock, #cpu, #memory, #network {
+    padding: 0 10px;
+    color: #89b4fa;
+}
+
+#clock {
+    font-weight: bold;
+}

@@ -1,0 +1,79 @@
+# Hyprland config for Steamshine Rig
+# Minimal config for headless streaming
+
+# Monitor settings
+# Headless monitor will be configured via hyprctl in entrypoint.sh
+# Default fallback:
+monitor=,highres,auto,1
+
+# Input settings
+input {
+    kb_layout = pt
+    follow_mouse = 1
+    sensitivity = 0 # -1.0 - 1.0, 0 means no modification.
+    accel_profile = flat
+}
+
+cursor {
+    no_warps = true
+}
+
+general {
+    gaps_in = 0
+    gaps_out = 0
+    border_size = 0
+    layout = dwindle
+}
+
+decoration {
+    rounding = 0
+    blur {
+        enabled = false
+    }
+    shadow {
+        enabled = false
+    }
+}
+
+animations {
+    enabled = false
+}
+
+dwindle {
+    pseudotile = true
+    preserve_split = true
+}
+
+master {
+    new_status = master
+}
+
+gestures {
+    # workspace_swipe = false
+}
+
+misc {
+    disable_hyprland_logo = true
+    disable_splash_rendering = true
+    force_default_wallpaper = 0
+}
+
+# XWayland (enabled by default, but let's be explicit if needed)
+xwayland {
+  force_zero_scaling = true
+}
+
+# Auto-start UI
+exec-once = hyprpaper
+exec-once = waybar
+exec-once = python3 /usr/local/bin/controller-listener.py
+
+# Keybindings (for debugging)
+bind = SUPER, Return, exec, foot
+bind = SUPER, S, exec, steam -gamepadui -steamos3
+bind = SUPER SHIFT, Q, killactive, 
+bind = SUPER SHIFT, E, exit, 
+
+# Window Rules
+windowrulev2 = float, class:(steam)
+windowrulev2 = center, class:(steam)
